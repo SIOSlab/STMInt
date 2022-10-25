@@ -2,6 +2,7 @@ from sympy import *
 import numpy as np
 from scipy.integrate import solve_ivp
 import math
+from astropy import constants as const
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -38,41 +39,34 @@ class STMint:
     # Invariant: lambda_dynamics_and_variational is a lambdified sympy expression
     # or None
 
-    def __init__(self, vars=None, dynamics=None, const_mult=1, preset="", variation=True):
+    def __init__(self, vars=None, dynamics=None, preset="", const_mult=1, variation=True):
     """
     Args:
-        vars (1-dimensional Sympy Matrix)
+        vars (1-dimensional sympy matrix)
             The variables used in the symbolic integration.
 
         dynamics (sympy expression(s))
             The dynamics to be symbolically integrated
 
-        const_mult (float)
-            Constant multiple of potential V for 2-body motion
-
         preset (string)
             Dynamic and Variational equation preset. Current presets are:
                 twoBody
                     Two body motion
+                twoBodyEarth
+                    Two body motion around Earth
+                twoBodySun
+                    Two body motion around the Sun
+
+        const_mult (float)
+            Constant multiple of potential V for 2-body motion
 
         variational (boolean)
             Whether variational equations will be created
     """
         # preset for two body motion
-        if(preset=="twoBody"):
-
-            # two body motion dynmaics
-            x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
-            V = const_mult/sqrt(x**2+y**2+z**2)
-            r = Matrix([x,y,z])
-            vr = Matrix([vx,vy,vz])
-            dVdr = diff(V,r)
-            RHS = Matrix.vstack(r,vr)
-
-            self.vars = Matrix([x,y,z,vx,vy,vz])
-            self.dynamics = RHS
+        if "twoBody" in preset:
+            self.presetTwoBody(preset, const_mult)
         else:
-
             # create sympy symbols
             for elem in vars:
                 elem=symbols(str(elem))
@@ -80,10 +74,48 @@ class STMint:
             self.vars = Matrix(vars)
             self.dynamics = dynamics
 
+        # lambdify dynamics
         self.lambda_dynamics = lambdify(self.vars, self.dynamics, "numpy")
 
         # if user wants to use variational equations
         self.setVarEqs(variation)
+
+    def presetTwoBody(self, preset, const_mult):
+        """ This method instanciates STMint under the preset of two body dynamics
+
+        This method calculates two body motion dynamics with the option for
+        preset constant multiples.
+
+        Args:
+            preset (string)
+                Dynamic and Variational equation preset. Current presets are:
+                    twoBody
+                        Two body motion
+                    twoBodyEarth
+                        Two body motion around Earth
+                    twoBodySun
+                        Two body motion around the Sun
+
+            const_mult (float)
+                Constant multiple of potential V for 2-body motion
+        """
+
+        x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
+
+        if "Earth" in preset:
+            V = const.GM_earth/sqrt(x**2+y**2+z**2)
+        if "Sun" in preset:
+            V = const.GM_earth/sqrt(x**2+y**2+z**2)
+        else:
+            V = const_mult/sqrt(x**2+y**2+z**2)
+
+        r = Matrix([x,y,z])
+        vr = Matrix([vx,vy,vz])
+        dVdr = diff(V,r)
+        RHS = Matrix.vstack(r,vr)
+
+        self.vars = Matrix([x,y,z,vx,vy,vz])
+        self.dynamics = RHS
 
 
     def setVarEqs(self, variation):
@@ -97,7 +129,7 @@ class STMint:
         are set to none.
 
         Args:
-            variation (bool)
+            variation (boolean)
                 Determines whether to create or delete variational equations.
         """
         if(variation):
