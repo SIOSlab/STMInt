@@ -26,6 +26,9 @@ class TestTwoBodyMotion(unittest.TestCase):
                                                     [1,0,0,0,1,0], max_step=.1)
 
     def test_propogation(self):
+        self.testDynmaicsAndVariational1 = self.test1.dynVar_int([0,(2*math.pi)],
+                                                    [1,0,0,0,1,0], max_step=.1)
+        
         self.testDynmaicsAndVariational2 = self.test1.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1.001,0], max_step=.1)
 
