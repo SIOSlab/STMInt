@@ -40,29 +40,29 @@ class STMint:
     # or None
 
     def __init__(self, vars=None, dynamics=None, preset="", const_mult=1, variation=True):
-    """
-    Args:
-        vars (1-dimensional sympy matrix)
-            The variables used in the symbolic integration.
+        """
+        Args:
+            vars (1-dimensional sympy matrix)
+                The variables used in the symbolic integration.
 
-        dynamics (sympy expression(s))
-            The dynamics to be symbolically integrated
+            dynamics (sympy expression(s))
+                The dynamics to be symbolically integrated
 
-        preset (string)
-            Dynamic and Variational equation preset. Current presets are:
-                twoBody
-                    Two body motion
-                twoBodyEarth
-                    Two body motion around Earth
-                twoBodySun
-                    Two body motion around the Sun
+            preset (string)
+                Dynamic and Variational equation preset. Current presets are:
+                    twoBody
+                        Two body motion
+                    twoBodyEarth
+                        Two body motion around Earth
+                    twoBodySun
+                        Two body motion around the Sun
 
-        const_mult (float)
-            Constant multiple of potential V for 2-body motion
+            const_mult (float)
+                Constant multiple of potential V for 2-body motion
 
-        variational (boolean)
-            Whether variational equations will be created
-    """
+            variational (boolean)
+                Whether variational equations will be created
+        """
         # preset for two body motion
         if "twoBody" in preset:
             self.presetTwoBody(preset, const_mult)
