@@ -39,33 +39,40 @@ class STMint:
     # Invariant: lambda_dynamics_and_variational is a lambdified sympy expression
     # or None
 
-    def __init__(self, vars=None, dynamics=None, preset="", const_mult=1, variation=True):
-    """
-    Args:
-        vars (1-dimensional sympy matrix)
-            The variables used in the symbolic integration.
+    def __init__(self, vars=None, dynamics=None, preset="", preset_mult=1, variation=True):
+        """
+        Args:
+            vars (1-dimensional sympy matrix)
+                The variables used in the symbolic integration.
 
-        dynamics (sympy expression(s))
-            The dynamics to be symbolically integrated
+            dynamics (sympy expression(s))
+                The dynamics to be symbolically integrated
 
-        preset (string)
-            Dynamic and Variational equation preset. Current presets are:
-                twoBody
-                    Two body motion
-                twoBodyEarth
-                    Two body motion around Earth
-                twoBodySun
-                    Two body motion around the Sun
+            preset (string)
+                Dynamic and Variational equation preset. Current presets are:
+                    twoBody
+                        Two body motion
+                    twoBodyEarth
+                        Two body motion around Earth
+                    twoBodySun
+                        Two body motion around the Sun
+                    threeBody
+                        Three body motion
+                    threeBodySunEarth
+                        Three body motion around the Sun and Earth
+                    threeBodyEarthMoon
+                        Three body motion around the Earth and Moon
 
-        const_mult (float)
-            Constant multiple of potential V for 2-body motion
+            preset_mult (float)
+                Constant multiple of potential V for 2-body motion
 
-        variational (boolean)
-            Whether variational equations will be created
-    """
+            variational (boolean)
+                Whether variational equations will be created """
         # preset for two body motion
         if "twoBody" in preset:
-            self.presetTwoBody(preset, const_mult)
+            self.presetTwoBody(preset, preset_mult)
+        elif "threeBody" in preset:
+            self.presetThreeBody(preset, preset_mult)
         else:
             # create sympy symbols
             for elem in vars:
@@ -80,7 +87,7 @@ class STMint:
         # if user wants to use variational equations
         self.setVarEqs(variation)
 
-    def presetTwoBody(self, preset, const_mult):
+    def presetTwoBody(self, preset, preset_mult):
         """ This method instanciates STMint under the preset of two body dynamics
 
         This method calculates two body motion dynamics with the option for
@@ -96,7 +103,7 @@ class STMint:
                     twoBodySun
                         Two body motion around the Sun
 
-            const_mult (float)
+            preset_mult (float)
                 Constant multiple of potential V for 2-body motion
         """
 
@@ -107,12 +114,62 @@ class STMint:
         if "Sun" in preset:
             V = const.GM_earth/sqrt(x**2+y**2+z**2)
         else:
-            V = const_mult/sqrt(x**2+y**2+z**2)
+            V = preset_mult/sqrt(x**2+y**2+z**2)
 
         r = Matrix([x,y,z])
         vr = Matrix([vx,vy,vz])
         dVdr = diff(V,r)
-        RHS = Matrix.vstack(r,vr)
+        RHS = Matrix.vstack(vr,dVdr)
+
+        self.vars = Matrix([x,y,z,vx,vy,vz])
+        self.dynamics = RHS
+
+    def presetThreeBody(self, preset, preset_mult):
+        """ This method instnaciates STMint under the preset of three body
+        restricted circular motion.
+
+        This method calculates three body restricted circular motion dynamics
+        with the option for a preset mass parameter.
+
+        Args:
+            preset (string)
+                Dynamic and Variational equation preset. Current presets for
+                three body motion are:
+                    threeBody
+                        Three body motion
+                    threeBodySunEarth
+                        Three body motion around the Sun and Earth
+                    threeBodyEarthMoon
+                        Three body motion around the Earth and Moon
+
+            preset_mult (float)
+                Mass parameter for two body motion (mu)
+        """
+
+        x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
+
+        if "SunEarth" in preset:
+            mu = 3.036e-6
+        if "EarthMoon" in preset:
+            mu = 1.215e-2
+        if preset_mult != 1:
+            mu = preset_mult
+        else:
+            mu = .5
+
+        mu1 = 1 - mu
+        mu2 = mu
+
+        r1 = sqrt((x + mu2)**2 + (y**2) + (z**2))
+        r2 = sqrt((x - mu1)**2 + (y**2) + (z**2))
+
+        U = (-1/2)*(mu1*(r1**2) + mu2*(r2**2)) - (mu1/r1) - (mu2/r2)
+
+        dUdx = diff(U,x)
+        dUdy = diff(U,y)
+        dUdz = diff(U,z)
+
+        RHS = Matrix([vx,vy,vz,((-1*dUdx) + 2*vy),((-1*dUdy)- 2*vx),(-1*dUdz)])
 
         self.vars = Matrix([x,y,z,vx,vy,vz])
         self.dynamics = RHS
