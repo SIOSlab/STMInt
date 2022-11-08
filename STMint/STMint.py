@@ -67,7 +67,14 @@ class STMint:
                 Constant multiple of potential V for 2-body motion
 
             variational (boolean)
-                Whether variational equations will be created """
+                Whether variational equations will be created
+                
+            const_mult (float)
+                Constant multiple of potential V for 2-body motion
+
+            variational (boolean)
+                Whether variational equations will be created
+        """
         # preset for two body motion
         if "twoBody" in preset:
             self.presetTwoBody(preset, preset_mult)
