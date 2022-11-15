@@ -3,6 +3,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import math
 from astropy import constants as const
+from astropy import units as u
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -68,7 +69,7 @@ class STMint:
 
             variational (boolean)
                 Whether variational equations will be created
-                
+
             const_mult (float)
                 Constant multiple of potential V for 2-body motion
 
@@ -117,9 +118,9 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "Earth" in preset:
-            V = const.GM_earth/sqrt(x**2+y**2+z**2)
+            V = const.GM_earth/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
         if "Sun" in preset:
-            V = const.GM_earth/sqrt(x**2+y**2+z**2)
+            V = const.GM_sun/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
         else:
             V = preset_mult/sqrt(x**2+y**2+z**2)
 
@@ -144,6 +145,7 @@ class STMint:
                 three body motion are:
                     threeBody
                         Three body motion
+                        (Default to SunEarth)
                     threeBodySunEarth
                         Three body motion around the Sun and Earth
                     threeBodyEarthMoon
@@ -162,7 +164,7 @@ class STMint:
         if preset_mult != 1:
             mu = preset_mult
         else:
-            mu = .5
+            mu = 3.036e-6
 
         mu1 = 1 - mu
         mu2 = mu
@@ -309,7 +311,7 @@ class STMint:
                         dense_output, events, vectorized, args, **options)
 
 
-    def dynVar_int(self, t_span, y0, method='RK45', t_eval=None,
+    def dynVar_int(self, t_span, y0, output='raw', method='RK45', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
                             args=None, **options):
         """ Clone of solve_ivp
@@ -332,20 +334,57 @@ class STMint:
                 Initial state. For problems in the complex domain, pass y0 with
                 a complex data type (even if the initial value is purely real).
 
+            output (str)
+                Output of dynVar_int, options include:
+                    raw
+                        Raw bunch object from solve_ivp
+                    final
+                        The state vector and STM at the final time only
+                    all
+                        The state vector and STM at all times
+
         Returns:
-            Bunch object with multiple defined fields, such as:
-                t (ndarray, shape (n_points,))
-                    Time points.
+            If output is 'raw'
+                Bunch object with multiple defined fields, such as:
+                    t (ndarray, shape (n_points,))
+                        Time points.
 
-                y (ndarray, shape (n, n_points))
-                    Values of the solution at t.
+                    y (ndarray, shape (n, n_points))
+                        Values of the solution at t.
 
-                sol (OdeSolution or None)
-                    Found solution as OdeSolution instance;
-                    None if dense_output was set to False.
+                    sol (OdeSolution or None)
+                        Found solution as OdeSolution instance;
+                        None if dense_output was set to False.
+
+            If output is 'final'
+                vecAndSTM (tuple)
+                    A tuple with the state vector and STM
+
+            If output is 'all'
+                allVecAndSTM (2d list)
+                    A list with the state vector and STM as a 7x6 matrix for each
+                    respective time value
+
         """
         assert self.variational != None, "Variational equations have not been created"
         initCon = np.vstack((np.array(y0),np.eye(len(self.vars))))
 
-        return solve_ivp(self._dynamics_and_variational_solver, t_span,
-            initCon.flatten(), method, t_eval, dense_output, events, vectorized, args, **options)
+        solution = solve_ivp(self._dynamics_and_variational_solver, t_span,
+                            initCon.flatten(), method, t_eval, dense_output,
+                            events, vectorized, args, **options)
+
+        if 'raw' in output:
+            return solution
+        if 'final' in output:
+            t_f = []
+
+            for i in range(len(solution.y)):
+                t_f.append(solution.y[i][-1])
+
+            vecAndSTM = (np.array([t_f[:6]]), np.reshape(t_f[6:], (6,6)))
+
+            return vecAndSTM
+        if 'all' in output:
+            allVecAndSTM = [solution.y,solution.t]
+
+            return allVecAndSTM

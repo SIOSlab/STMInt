@@ -25,11 +25,24 @@ class TestTwoBodyMotion(unittest.TestCase):
     def test_dyn_int(self):
         self.testDynamics = self.test1.dyn_int([0,(2*math.pi)], [1,0,0,0,1,0], max_step=.1)
 
+
     def test_preset(self):
         self.presetTest = STMint(preset="twoBody")
 
         self.testDynamicsAndVariational2 = self.presetTest.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], max_step=.1)
+
+
+    def test_dynVar_int(self):
+        self.testDynamicsAndVariational2 = self.test1.dynVar_int([0,(2*math.pi)],
+                                                    [1,0,0,0,1,0], output='raw', max_step=.1)
+
+        self.testDynamicsAndVariational3 = self.test1.dynVar_int([0,(2*math.pi)],
+                                                    [1,0,0,0,1,0], output='final', max_step=.1)
+
+        self.testDynamicsAndVariational4 = self.test1.dynVar_int([0,(2*math.pi)],
+                                                    [1,0,0,0,1,0], output='all', max_step=.1)
+
 
     def test_propogation(self):
 
@@ -56,6 +69,7 @@ class TestTwoBodyMotion(unittest.TestCase):
         NumericalDeltaX_f = phiT_f * Matrix([0,0,0,0,0.001,0])
 
         self.assertTrue((((NumericalDeltaX_f-IVPdeltaX_f).norm())/NumericalDeltaX_f.norm()) < .02)
+
 
     def test_propgationWithFindSTM(self):
 
@@ -94,9 +108,9 @@ class TestGeneralDynamics(unittest.TestCase):
         self.simpleRight = Matrix([[1,0],[0,0]]) * A
         self.test1 = STMint([a,b,c,d], self.simpleRight, variation=False)
 
+
     def test_dyn_int(self):
         testDynamics = self.test1.dyn_int([0,2], [1,1,1,1], max_step = .1)
-
 
 
 if __name__ == '__main__':

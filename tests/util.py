@@ -45,6 +45,7 @@ def findSTM(r0, v0, rf, vf, dt):
 	B=np.transpose(np.vstack([r0/np.sqrt(mu*r0Mag), r0Mag*v0/mu]))
 	Y0 = np.block([[sr0, -1.*np.matmul((np.matmul(sr0, sv0)+sh), B), -1.*np.transpose([r0])],[sv0, np.matmul(mu/r0Mag**3*np.matmul(sr0,sr0)-np.matmul(sv0,sv0), B), np.transpose([v0])/2.]])
 	Yf = np.block([[srf, -1.*np.matmul((np.matmul(srf, svf)+sh), B), np.transpose([-1.*rf+3./2.*dt*vf])],[svf, np.matmul(mu/rfMag**3*np.matmul(srf,srf)-np.matmul(svf,svf), B), np.transpose([vf/2.-3./2.*mu/rfMag**3*dt*rf])]])
+	print(Y0)
 	return np.matmul(Yf, np.linalg.inv(Y0))
 
 def groundStationPos(lon0,lat,ts):
