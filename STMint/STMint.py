@@ -192,7 +192,11 @@ class STMint:
 		state = states[:n]
 		stm = np.reshape(states[n:n*(n+1)], (n, n))
 		stt = np.reshape(states[n*(n+1):], (n, n, n))
-		
+		#time derivative of the various components of the augmented state vector
+        jac = jac_fn(state)
+        stated = dyn_fn(state)
+        stmd = np.reshape(np.matmul(jac, stm), (n**2))
+        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,jl,km->ijk', hes_fn(state), stm, stm)), (n**3))
 		return np.stack((stated, stmd, sttd))
 
     def setVarEqs(self, variational_order):
@@ -209,24 +213,25 @@ class STMint:
             variation (boolean)
                 Determines whether to create or delete variational equations.
         """
-        if (variational_order == 1):
+        if (variational_order == 1 or variational_order == 2):
             self.jacobian = self.dynamics.jacobian(self.vars.transpose())
             self.STM = MatrixSymbol("phi",len(self.vars),len(self.vars))
             self.variational = self.jacobian * self.STM
             self.lambda_dynamics_and_variational = lambdify((self.vars,self.STM),
                                         Matrix.vstack(self.dynamics.transpose(),
                                         Matrix(self.variational)), "numpy")
-		elif (variational_order == 2):
-			#contract the hessian to get rid of spurious dimensions from 
-			#using sympy matrices to calculate derivative
-			self.hessian = tensorcontract(Derivative(self.dynamics, 
-									self.vars, 2, evaluate=True), (1,3,5))
-			self.lambda_hessian = lambdify(self.vars, self.hessian, "numpy")
-			self.jacobian = self.dynamics.jacobian(self.vars.transpose())
-			self.lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
-			self.lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
-			self.lambda_dynamics_and_variational = 
-				
+            if (variational_order == 2):
+                #contract the hessian to get rid of spurious dimensions from 
+                #using sympy matrices to calculate derivative
+                self.hessian = tensorcontract(Derivative(self.dynamics, 
+                                        self.vars, 2, evaluate=True), (1,3,5))
+                self.lambda_hessian = lambdify(self.vars, self.hessian, "numpy")
+                self.jacobian = self.dynamics.jacobian(self.vars.transpose())
+                self.lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
+                self.lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
+                self.n = len(self.vars)
+                self.lambda_dynamics_and_variational2 = lambda states: self.second_variational_equations(
+                self.lambda_dyn, self.lambda_jacobian, self.lambda_hessian, states, self.n)
 							
         else:
             self.jacobian = None
@@ -407,6 +412,88 @@ class STMint:
             vecAndSTM = (np.array([t_f[:6]]), np.reshape(t_f[6:], (6,6)))
 
             return vecAndSTM
+        if 'all' in output:
+            allVecAndSTM = [solution.y,solution.t]
+
+            return allVecAndSTM
+            
+            
+            
+            
+def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
+                            dense_output=False, events=None, vectorized=False,
+                            args=None, **options):
+        """ Clone of solve_ivp
+
+        Method uses _dynamics_and_variational_solver to solve an innitial value
+        prolbem with given dynamics and variational equations. This method has
+        the same arguments and Scipy's solve_ivp function.
+
+        Non-optional arguments are listed below.
+        See documentation of solve_ivp for a full list and description of arguments
+        and returns
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
+
+        Args:
+            t_span (2-tuple of floats)
+                Interval of integration (t0, tf). The solver starts with t=t0
+                and integrates until it reaches t=tf.
+
+            y0 (array_like, shape (n,))
+                Initial state. For problems in the complex domain, pass y0 with
+                a complex data type (even if the initial value is purely real).
+
+            output (str)
+                Output of dynVar_int, options include:
+                    raw
+                        Raw bunch object from solve_ivp
+                    final
+                        The state vector and STM at the final time only
+                    all
+                        The state vector and STM at all times
+
+        Returns:
+            If output is 'raw'
+                Bunch object with multiple defined fields, such as:
+                    t (ndarray, shape (n_points,))
+                        Time points.
+
+                    y (ndarray, shape (n, n_points))
+                        Values of the solution at t.
+
+                    sol (OdeSolution or None)
+                        Found solution as OdeSolution instance;
+                        None if dense_output was set to False.
+
+            If output is 'final'
+                vecAndSTM (tuple)
+                    A tuple with the state vector and STM
+
+            If output is 'all'
+                allVecAndSTM (2d list)
+                    A list with the state vector and STM as a 7x6 matrix for each
+                    respective time value
+
+        """
+        assert self.variational != None, "Variational equations have not been created"
+        initCon = np.vstack((np.array(y0), np.flatten(np.eye(len(self.vars))), np.zeros(len(self.vars)**3)))
+
+        solution = solve_ivp(self.lambda_dynamics_and_variational2, t_span,
+                            initCon, method, t_eval, dense_output,
+                            events, vectorized, args, **options)
+
+        if 'raw' in output:
+            return solution
+        if 'final' in output:
+            t_f = []
+
+            for i in range(len(solution.y)):
+                t_f.append(solution.y[i][-1])
+
+            vecAndSTTs = (np.array([t_f[:self.n]]), np.reshape(t_f[self.n:self.n*(self.n+1)], 
+                            (self.n, self.n)), np.reshape(t_f[self.n*(self.n+1):], (self.n, self.n, self.n)))
+
+            return vecAndSTTs
         if 'all' in output:
             allVecAndSTM = [solution.y,solution.t]
 
