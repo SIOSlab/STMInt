@@ -40,7 +40,7 @@ class STMint:
     # Invariant: lambda_dynamics_and_variational is a lambdified sympy expression
     # or None
 
-    def __init__(self, vars=None, dynamics=None, preset="", preset_mult=1, variation=True):
+    def __init__(self, vars=None, dynamics=None, preset="", preset_mult=1, variational_order=1):
         """
         Args:
             vars (1-dimensional sympy matrix)
@@ -73,8 +73,11 @@ class STMint:
             const_mult (float)
                 Constant multiple of potential V for 2-body motion
 
-            variational (boolean)
-                Whether variational equations will be created
+            variational_order (int)
+                Order of variational equations to be computed
+				0 - for no variational equations
+				1 - for first order variational equations
+				2 - for first and second order variational equations
         """
         # preset for two body motion
         if "twoBody" in preset:
@@ -93,7 +96,7 @@ class STMint:
         self.lambda_dynamics = lambdify(self.vars, self.dynamics, "numpy")
 
         # if user wants to use variational equations
-        self.setVarEqs(variation)
+        self.setVarEqs(variational_order)
 
     def presetTwoBody(self, preset, preset_mult):
         """ This method instanciates STMint under the preset of two body dynamics
@@ -184,7 +187,15 @@ class STMint:
         self.dynamics = RHS
 
 
-    def setVarEqs(self, variation):
+	def second_variational_equations(dyn_fn, jac_fn, hes_fn, states, n):
+		#unpack states into three components		
+		state = states[:n]
+		stm = np.reshape(states[n:n*(n+1)], (n, n))
+		stt = np.reshape(states[n*(n+1):], (n, n, n))
+		
+		return np.stack((stated, stmd, sttd))
+
+    def setVarEqs(self, variational_order):
         """ This method creates or deletes assicioated varitional equations with
         given dynmaics
 
@@ -198,13 +209,25 @@ class STMint:
             variation (boolean)
                 Determines whether to create or delete variational equations.
         """
-        if(variation):
+        if (variational_order == 1):
             self.jacobian = self.dynamics.jacobian(self.vars.transpose())
             self.STM = MatrixSymbol("phi",len(self.vars),len(self.vars))
             self.variational = self.jacobian * self.STM
             self.lambda_dynamics_and_variational = lambdify((self.vars,self.STM),
                                         Matrix.vstack(self.dynamics.transpose(),
                                         Matrix(self.variational)), "numpy")
+		elif (variational_order == 2):
+			#contract the hessian to get rid of spurious dimensions from 
+			#using sympy matrices to calculate derivative
+			self.hessian = tensorcontract(Derivative(self.dynamics, 
+									self.vars, 2, evaluate=True), (1,3,5))
+			self.lambda_hessian = lambdify(self.vars, self.hessian, "numpy")
+			self.jacobian = self.dynamics.jacobian(self.vars.transpose())
+			self.lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
+			self.lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
+			self.lambda_dynamics_and_variational = 
+				
+							
         else:
             self.jacobian = None
             self.STM = None
