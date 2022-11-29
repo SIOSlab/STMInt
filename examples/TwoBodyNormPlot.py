@@ -4,7 +4,7 @@ from STMint.STMint import STMint
 import math
 import matplotlib.pyplot as plt
 
-# Calculating the soltuions to non-dimensional two-body motion
+# Calculating the soltuions to non-Dimensional two-body motion
 example = STMint(preset="twoBody")
 
 exampleSol = example.dynVar_int([0,(20*math.pi)],[1,0,0,0,1,0], max_step=.1)
