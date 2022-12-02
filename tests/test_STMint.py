@@ -42,7 +42,14 @@ class TestTwoBodyMotion(unittest.TestCase):
 
         self.testDynamicsAndVariational4 = self.test1.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], output='all', max_step=.1)
+    def test_dynVar_int2(self):
+        print("hello")
+        self.presetTest = STMint(preset="twoBody", variational_order=2)
 
+        self.testDynamicsAndVariational2 = self.presetTest.dynVar_int2([0,(2*math.pi)],
+                                                    [1,0,0,0,1,0], output='final', max_step=.001)
+        print(self.testDynamicsAndVariational2)
+        print(self.presetTest.nonlin_index(self.testDynamicsAndVariational2[1], self.testDynamicsAndVariational2[2]))
 
     def test_propogation(self):
 
@@ -106,7 +113,7 @@ class TestGeneralDynamics(unittest.TestCase):
         a,b,c,d=symbols("a,b,c,d")
         A = Matrix([[a,b],[c,d]])
         self.simpleRight = Matrix([[1,0],[0,0]]) * A
-        self.test1 = STMint([a,b,c,d], self.simpleRight, variation=False)
+        self.test1 = STMint([a,b,c,d], self.simpleRight, variational_order=0)
 
 
     def test_dyn_int(self):

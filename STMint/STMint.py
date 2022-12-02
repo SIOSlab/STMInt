@@ -4,6 +4,7 @@ from scipy.integrate import solve_ivp
 import math
 from astropy import constants as const
 from astropy import units as u
+from scipy.linalg import eigh, norm
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -75,9 +76,9 @@ class STMint:
 
             variational_order (int)
                 Order of variational equations to be computed
-				0 - for no variational equations
-				1 - for first order variational equations
-				2 - for first and second order variational equations
+                0 - for no variational equations
+                1 - for first order variational equations
+                2 - for first and second order variational equations
         """
         # preset for two body motion
         if "twoBody" in preset:
@@ -187,17 +188,17 @@ class STMint:
         self.dynamics = RHS
 
 
-	def second_variational_equations(dyn_fn, jac_fn, hes_fn, states, n):
-		#unpack states into three components		
-		state = states[:n]
-		stm = np.reshape(states[n:n*(n+1)], (n, n))
-		stt = np.reshape(states[n*(n+1):], (n, n, n))
-		#time derivative of the various components of the augmented state vector
-        jac = jac_fn(state)
-        stated = dyn_fn(state)
+    def second_variational_equations(self, dyn_fn, jac_fn, hes_fn, states, n):
+        #unpack states into three components        
+        state = states[:n]
+        stm = np.reshape(states[n:n*(n+1)], (n, n))
+        stt = np.reshape(states[n*(n+1):], (n, n, n))
+        #time derivative of the various components of the augmented state vector
+        jac = jac_fn(*state)
+        stated = dyn_fn(*state)
         stmd = np.reshape(np.matmul(jac, stm), (n**2))
-        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,jl,km->ijk', hes_fn(state), stm, stm)), (n**3))
-		return np.stack((stated, stmd, sttd))
+        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,jl,km->ijk', hes_fn(*state), stm, stm), (n**3))
+        return np.hstack((stated.flatten(), stmd, sttd))
 
     def setVarEqs(self, variational_order):
         """ This method creates or deletes assicioated varitional equations with
@@ -223,16 +224,16 @@ class STMint:
             if (variational_order == 2):
                 #contract the hessian to get rid of spurious dimensions from 
                 #using sympy matrices to calculate derivative
-                self.hessian = tensorcontract(Derivative(self.dynamics, 
-                                        self.vars, 2, evaluate=True), (1,3,5))
+                self.hessian = tensorcontraction(Array(self.dynamics).diff( 
+                                        Array(self.vars), Array(self.vars)), (1,3,5))
                 self.lambda_hessian = lambdify(self.vars, self.hessian, "numpy")
                 self.jacobian = self.dynamics.jacobian(self.vars.transpose())
                 self.lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
                 self.lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
                 self.n = len(self.vars)
-                self.lambda_dynamics_and_variational2 = lambda states: self.second_variational_equations(
+                self.lambda_dynamics_and_variational2 = lambda t, states: self.second_variational_equations(
                 self.lambda_dyn, self.lambda_jacobian, self.lambda_hessian, states, self.n)
-							
+                            
         else:
             self.jacobian = None
             self.STM = None
@@ -420,7 +421,7 @@ class STMint:
             
             
             
-def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
+    def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
                             args=None, **options):
         """ Clone of solve_ivp
@@ -476,7 +477,7 @@ def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
 
         """
         assert self.variational != None, "Variational equations have not been created"
-        initCon = np.vstack((np.array(y0), np.flatten(np.eye(len(self.vars))), np.zeros(len(self.vars)**3)))
+        initCon = np.hstack((np.array(y0), np.eye(len(self.vars)).flatten(), np.zeros(len(self.vars)**3)))
 
         solution = solve_ivp(self.lambda_dynamics_and_variational2, t_span,
                             initCon, method, t_eval, dense_output,
@@ -498,3 +499,16 @@ def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
             allVecAndSTM = [solution.y,solution.t]
 
             return allVecAndSTM
+        
+    def nonlin_index(self, stm, stt):
+        sttNorm = 0
+        stmNorm = 0
+        for i in range(len(stm)):
+            w = eigh(stt[i,:,:], eigvals_only=True)
+            sttNorm = max(sttNorm, max(w, key=abs))
+            rowNorm = norm(stm[:,i])
+            stmNorm = max(stmNorm, rowNorm)
+        return sttNorm/stmNorm
+
+        
+            
