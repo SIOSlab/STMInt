@@ -405,3 +405,5 @@ class STMint:
                 STMs.append(np.reshape(stm, (l,l)))
 
             allVecAndSTM = [states,STMs,solution.t]
+            
+            return allVecAndSTM
