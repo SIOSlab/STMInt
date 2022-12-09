@@ -530,14 +530,14 @@ class STMint:
                 for j in range(len(solution.y)):
                     if j < l:
                         state.append(solution.y[j][i])
-                    elif (j >= l) && (j < (l*l)):
+                    elif (j >= l) and (j < (l*(l+1))):
                         stm.append(solution.y[j][i])
                     else:
                         stt.append(solution.y[j][i])
 
                 states.append(state)
                 STMs.append(np.reshape(stm, (l,l)))
-                STTs.append(np.reshape(stt, (l,l,l))
+                STTs.append(np.reshape(stt, (l,l,l)))
 
             allVecAndSTM = [states,STMs,STTs,solution.t]
 
