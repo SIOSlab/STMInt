@@ -361,9 +361,11 @@ class STMint:
                     A tuple with the state vector and STM
 
             If output is 'all'
-                allVecAndSTM (2d list)
-                    A list with the state vector and STM as a 7x6 matrix for each
-                    respective time value
+                allVecAndSTM (3d array)
+                    A numpy array with three separate arrays. The first array is
+                    the complete set of states of the solution. The second array
+                    is the complete set of STMs of the solution. The third array
+                    is the complete set of time values of the solution.
 
         """
         assert self.variational != None, "Variational equations have not been created"
@@ -385,6 +387,21 @@ class STMint:
 
             return vecAndSTM
         if 'all' in output:
-            allVecAndSTM = [solution.y,solution.t]
+            states = []
+            STMs = []
+            l = len(self.vars)
 
-            return allVecAndSTM
+            for i in range(len(solution.y[0])):
+                stm = []
+                state = []
+
+                for j in range(len(solution.y)):
+                    if j < l:
+                        state.append(solution.y[j][i])
+                    else:
+                        stm.append(solution.y[j][i])
+
+                states.append(state)
+                STMs.append(np.reshape(stm, (l,l)))
+
+            allVecAndSTM = [states,STMs,solution.t]
