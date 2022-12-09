@@ -301,7 +301,7 @@ class STMint:
 # =============================================================================
 
 
-    def dyn_int(self, t_span, y0, method='RK45', t_eval=None,
+    def dyn_int(self, t_span, y0, method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
                             args=None, **options):
         """ Clone of solve_ivp
@@ -340,7 +340,7 @@ class STMint:
                         dense_output, events, vectorized, args, **options)
 
 
-    def dynVar_int(self, t_span, y0, output='raw', method='RK45', t_eval=None,
+    def dynVar_int(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
                             args=None, **options):
         """ Clone of solve_ivp
@@ -419,7 +419,6 @@ class STMint:
             states = []
             STMs = []
             l = len(self.vars)
-
             for i in range(len(solution.y[0])):
                 stm = []
                 state = []
@@ -439,7 +438,7 @@ class STMint:
             
             
             
-    def dynVar_int2(self, t_span, y0, output='raw', method='RK45', t_eval=None,
+    def dynVar_int2(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
                             args=None, **options):
         """ Clone of solve_ivp
@@ -540,7 +539,7 @@ class STMint:
                 STTs.append(np.reshape(stt, (l,l,l)))
 
             allVecAndSTM = [states,STMs,STTs,solution.t]
-
+            
             return allVecAndSTM
         
     def nonlin_index(self, stm, stt):
