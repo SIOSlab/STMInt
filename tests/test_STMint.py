@@ -19,7 +19,7 @@ class TestTwoBodyMotion(unittest.TestCase):
 
         self.test1 = STMint([x,y,z,vx,vy,vz], dynamics)
 
-        self.testDynmaicsAndVariational1 = self.test1.dynVar_int([0,(2*math.pi)],
+        self.testDynamicsAndVariational1 = self.test1.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], max_step=.1)
 
     def test_dyn_int(self):
@@ -43,31 +43,42 @@ class TestTwoBodyMotion(unittest.TestCase):
         self.testDynamicsAndVariational4 = self.test1.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], output='all', max_step=.1)
     def test_dynVar_int2(self):
-        print("hello")
         self.presetTest = STMint(preset="twoBody", variational_order=2)
 
-        self.testDynamicsAndVariational2 = self.presetTest.dynVar_int2([0,(2*math.pi)],
+        self.testDynamicsAndVariational2_10 = self.presetTest.dynVar_int2([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], output='final', max_step=.001)
-        print(self.testDynamicsAndVariational2)
-        print(self.presetTest.nonlin_index(self.testDynamicsAndVariational2[1], self.testDynamicsAndVariational2[2]))
+        #run the nonlinearity index calculation
+        nonlinearity_index = self.presetTest.nonlin_index(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2])
 
-    def test_propogation(self):
+        #find second leg of stm and stt
+        self.testDynamicsAndVariational2_21 = self.presetTest.dynVar_int2([2*math.pi, 3*math.pi],
+                                                    [1,0,0,0,1,0], output='final', max_step=.001)
+        #find stm and stt along total interval
+        self.testDynamicsAndVariational2_20 = self.presetTest.dynVar_int2([0, 3*math.pi],
+                                                    [1,0,0,0,1,0], output='final', max_step=.001)
+        stt2_reference = self.testDynamicsAndVariational2_20[2]
+        stt2_cocycle = self.presetTest.cocycle2(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2], 
+                            self.testDynamicsAndVariational2_21[1], self.testDynamicsAndVariational2_21[2])[1]
+        self.assertTrue(np.amax(np.abs((stt2_cocycle-stt2_reference))) < 10.**(-8))
 
-        self.testDynmaicsAndVariational2 = self.test1.dynVar_int([0,(2*math.pi)],
+
+    def test_propagation(self):
+
+        self.testDynamicsAndVariational2 = self.test1.dynVar_int([0,(2*math.pi)],
                                                     [1,0,0,0,1.001,0], max_step=.1)
 
-        difX = self.testDynmaicsAndVariational2.y[0][-1] - self.testDynmaicsAndVariational1.y[0][-1]
-        difY = self.testDynmaicsAndVariational2.y[1][-1] - self.testDynmaicsAndVariational1.y[1][-1]
-        difZ = self.testDynmaicsAndVariational2.y[2][-1] - self.testDynmaicsAndVariational1.y[2][-1]
-        difVx = self.testDynmaicsAndVariational2.y[3][-1] - self.testDynmaicsAndVariational1.y[3][-1]
-        difVy = self.testDynmaicsAndVariational2.y[4][-1] - self.testDynmaicsAndVariational1.y[4][-1]
-        difVz = self.testDynmaicsAndVariational2.y[5][-1] - self.testDynmaicsAndVariational1.y[5][-1]
+        difX = self.testDynamicsAndVariational2.y[0][-1] - self.testDynamicsAndVariational1.y[0][-1]
+        difY = self.testDynamicsAndVariational2.y[1][-1] - self.testDynamicsAndVariational1.y[1][-1]
+        difZ = self.testDynamicsAndVariational2.y[2][-1] - self.testDynamicsAndVariational1.y[2][-1]
+        difVx = self.testDynamicsAndVariational2.y[3][-1] - self.testDynamicsAndVariational1.y[3][-1]
+        difVy = self.testDynamicsAndVariational2.y[4][-1] - self.testDynamicsAndVariational1.y[4][-1]
+        difVz = self.testDynamicsAndVariational2.y[5][-1] - self.testDynamicsAndVariational1.y[5][-1]
 
         # Basic Numerical Calculation
         t_f = []
 
-        for i in range(len(self.testDynmaicsAndVariational1.y)):
-            t_f.append(self.testDynmaicsAndVariational1.y[i][-1])
+        for i in range(len(self.testDynamicsAndVariational1.y)):
+            t_f.append(self.testDynamicsAndVariational1.y[i][-1])
 
         phiT_f = Matrix(np.reshape(t_f[6:], (6,6)))
 
@@ -78,16 +89,16 @@ class TestTwoBodyMotion(unittest.TestCase):
         self.assertTrue((((NumericalDeltaX_f-IVPdeltaX_f).norm())/NumericalDeltaX_f.norm()) < .02)
 
 
-    def test_propgationWithFindSTM(self):
+    def test_propagationWithFindSTM(self):
 
         # Calculating STM from findSTM
-        finalPos = np.array([self.testDynmaicsAndVariational1.y[0][-1],
-        self.testDynmaicsAndVariational1.y[1][-1],
-        self.testDynmaicsAndVariational1.y[2][-1]])
+        finalPos = np.array([self.testDynamicsAndVariational1.y[0][-1],
+        self.testDynamicsAndVariational1.y[1][-1],
+        self.testDynamicsAndVariational1.y[2][-1]])
 
-        finalVel = np.array([self.testDynmaicsAndVariational1.y[3][-1],
-        self.testDynmaicsAndVariational1.y[4][-1],
-        self.testDynmaicsAndVariational1.y[5][-1]])
+        finalVel = np.array([self.testDynamicsAndVariational1.y[3][-1],
+        self.testDynamicsAndVariational1.y[4][-1],
+        self.testDynamicsAndVariational1.y[5][-1]])
 
         stmUtil = findSTM(np.array([1,0,0]),np.array([0,1,0]),finalPos,finalVel,
                                 (2*math.pi))
@@ -95,8 +106,8 @@ class TestTwoBodyMotion(unittest.TestCase):
         # Calculating STM from STMint
         t_f = []
 
-        for i in range(len(self.testDynmaicsAndVariational1.y)):
-            t_f.append(self.testDynmaicsAndVariational1.y[i][-1])
+        for i in range(len(self.testDynamicsAndVariational1.y)):
+            t_f.append(self.testDynamicsAndVariational1.y[i][-1])
 
         stmSTMint = Matrix(np.reshape(t_f[6:], (6,6)))
 

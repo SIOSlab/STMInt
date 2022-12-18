@@ -47,27 +47,3 @@ def findSTM(r0, v0, rf, vf, dt):
 	Yf = np.block([[srf, -1.*np.matmul((np.matmul(srf, svf)+sh), B), np.transpose([-1.*rf+3./2.*dt*vf])],[svf, np.matmul(mu/rfMag**3*np.matmul(srf,srf)-np.matmul(svf,svf), B), np.transpose([vf/2.-3./2.*mu/rfMag**3*dt*rf])]])
 	print(Y0)
 	return np.matmul(Yf, np.linalg.inv(Y0))
-
-def groundStationPos(lon0,lat,ts):
-	"""
-	Return low fidelity ground station positions for a sensor
-
-	Args:
-		lon0 (float):
-			Initial longitude in radians
-		lat (float):
-			Latitude in radians
-		ts (numpy array (n)):
-			Seconds for each position
-	Returns:
-		Rss (numpy array (n)):
-			n positions of a hypothetical sensor on the ground
-	"""
-	Re = 6371. << u.km
-	lons = lon0 + ts * 2.*np.pi/(1. * u.d)*u.rad
-	for i in range(len(ts)):
-		if i==0:
-			Rss =Re*np.array([np.cos(lons[i])*np.cos(lat),np.sin(lons[i])*np.cos(lat),np.sin(lat)])
-		else:
-			Rss = np.vstack((Rss, Re*np.array([np.cos(lons[i])*np.cos(lat),np.sin(lons[i])*np.cos(lat),np.sin(lat)])))
-	return Rss

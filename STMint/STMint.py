@@ -137,7 +137,7 @@ class STMint:
         self.dynamics = RHS
 
     def presetThreeBody(self, preset, preset_mult):
-        """ This method instnaciates STMint under the preset of three body
+        """ This method instantiates STMint under the preset of three body
         restricted circular motion.
 
         This method calculates three body restricted circular motion dynamics
@@ -201,7 +201,7 @@ class STMint:
         return np.hstack((stated.flatten(), stmd, sttd))
 
     def setVarEqs(self, variational_order):
-        """ This method creates or deletes assicioated varitional equations with
+        """ This method creates or deletes associated varitional equations with
         given dynmaics
 
         This method first takes the jacobian of the dynamics, and creates a
@@ -542,7 +542,22 @@ class STMint:
             
             return allVecAndSTM
         
+
     def nonlin_index(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+       The induced infinity-2 norm is used in this calculation
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
         sttNorm = 0
         stmNorm = 0
         for i in range(len(stm)):
@@ -551,6 +566,55 @@ class STMint:
             rowNorm = norm(stm[i,:])
             stmNorm = max(stmNorm, rowNorm)
         return sttNorm/stmNorm
+
+
+    def cocycle1(self, stm10, stm21):
+        """ Function to find STM along two combined subintervals
+
+       The cocycle conditon equation is used to find Phi(t2,t_0)=Phi(t2,t_1)*Phi(t1,t_0)
+
+        Args:
+            stm10 (np array)
+                State transition matrix from time 0 to 1
+
+            stm21 (np array)
+                State transition matrix from time 1 to 2
+
+        Returns:
+            stm20 (np array)
+                State transition matrix from time 0 to 2
+        """
+        np.matmul(stm21, stm10)
+
+
+    def cocycle2(self, stm10, stt10, stm21, stt21):
+        """ Function to find STM and STT along two combined subintervals
+
+       The cocycle conditon equation is used to find Phi(t2,t0)=Phi(t2,t1)*Phi(t1,t0)
+        and the generalized cocycle condition is used to find Psi(t2,t0)
+
+        Args:
+            stm10 (np array)
+                State transition matrix from time 0 to 1
+
+            stt10 (np array)
+                State transition tensor from time 0  to 1
+
+            stm21 (np array)
+                State transition matrix from time 1 to 2
+
+            stt21 (np array)
+                State transition tensor from time 1 to 2
+
+        Returns:
+            stm20 (np array)
+                State transition matrix from time 0 to 2
+            stt20 (np array)
+                State transition tensor from time 0 to 2            
+        """
+        stm20 = np.matmul(stm21, stm10)
+        stt20 = np.einsum('il,ljk->ijk', stm21, stt10) + np.einsum('ilm,lj,mk->ijk', stt21, stm10, stm10)
+        return [stm20, stt20]
 
         
             
