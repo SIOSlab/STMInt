@@ -197,7 +197,7 @@ class STMint:
         jac = jac_fn(*state)
         stated = dyn_fn(*state)
         stmd = np.reshape(np.matmul(jac, stm), (n**2))
-        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,jl,km->ijk', hes_fn(*state), stm, stm), (n**3))
+        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,lj,mk->ijk', hes_fn(*state), stm, stm), (n**3))
         return np.hstack((stated.flatten(), stmd, sttd))
 
     def setVarEqs(self, variational_order):
@@ -511,7 +511,7 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTTs = (np.array([t_f[:self.n]]), np.reshape(t_f[self.n:self.n*(self.n+1)], 
+            vecAndSTTs = (np.array([t_f[:self.n]]),np.reshape(t_f[self.n:self.n*(self.n+1)], 
                             (self.n, self.n)), np.reshape(t_f[self.n*(self.n+1):], (self.n, self.n, self.n)))
 
             return vecAndSTTs
@@ -547,8 +547,8 @@ class STMint:
         stmNorm = 0
         for i in range(len(stm)):
             w = eigh(stt[i,:,:], eigvals_only=True)
-            sttNorm = max(sttNorm, max(w, key=abs))
-            rowNorm = norm(stm[:,i])
+            sttNorm = max(sttNorm, abs(max(w, key=abs)))
+            rowNorm = norm(stm[i,:])
             stmNorm = max(stmNorm, rowNorm)
         return sttNorm/stmNorm
 
