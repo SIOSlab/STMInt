@@ -59,7 +59,7 @@ class TestTwoBodyMotion(unittest.TestCase):
         stt2_reference = self.testDynamicsAndVariational2_20[2]
         stt2_cocycle = self.presetTest.cocycle2(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2], 
                             self.testDynamicsAndVariational2_21[1], self.testDynamicsAndVariational2_21[2])[1]
-        self.assertTrue(np.amax(np.abs((stt2_cocycle-stt2_reference))) < 10.**(-8))
+        self.assertTrue(np.amax(np.abs((stt2_cocycle-stt2_reference))) < 1E-8)
 
 
     def test_propagation(self):
@@ -88,7 +88,6 @@ class TestTwoBodyMotion(unittest.TestCase):
 
         self.assertTrue((((NumericalDeltaX_f-IVPdeltaX_f).norm())/NumericalDeltaX_f.norm()) < .02)
 
-
     def test_propagationWithFindSTM(self):
 
         # Calculating STM from findSTM
@@ -109,9 +108,8 @@ class TestTwoBodyMotion(unittest.TestCase):
         for i in range(len(self.testDynamicsAndVariational1.y)):
             t_f.append(self.testDynamicsAndVariational1.y[i][-1])
 
-        stmSTMint = Matrix(np.reshape(t_f[6:], (6,6)))
-
-        self.assertTrue((np.linalg.norm(stmUtil-stmSTMint)/np.linalg.norm(stmUtil)) < .02)
+        stmSTMint = np.reshape(t_f[6:], (6,6))
+        self.assertTrue((np.linalg.norm(stmUtil-stmSTMint)/np.linalg.norm(stmUtil)) < 1E-8)
 
 
 class TestThreeBodyMotion(unittest.TestCase):
