@@ -162,27 +162,30 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "SunEarth" in preset:
-            mu = 3.036e-6
+            mu = const.M_earth/ (const.M_earth + const.M_sun)
+            mu = mu.value # mass fraction for Earth-Sun system  
         if "EarthMoon" in preset:
-            mu = 1.215e-2
+            mu = const.M_moon/ (const.M_earth + const.M_moon)
+            mu = mu.value # mass fraction for Earth-Sun system  
         if preset_mult != 1:
             mu = preset_mult
         else:
-            mu = 3.036e-6
+            mu = const.M_earth/ (const.M_earth + const.M_sun)
+            mu = mu.value # mass fraction for Earth-Sun system  
 
-        mu1 = 1 - mu
+        mu1 = 1. - mu
         mu2 = mu
 
         r1 = sqrt((x + mu2)**2 + (y**2) + (z**2))
         r2 = sqrt((x - mu1)**2 + (y**2) + (z**2))
 
-        U = (-1/2)*(mu1*(r1**2) + mu2*(r2**2)) - (mu1/r1) - (mu2/r2)
+        U = -1. * ( 1./2. * (x**2 + y**2 + mu1*mu2) + mu1/r1 + mu2/r2)
 
         dUdx = diff(U,x)
         dUdy = diff(U,y)
         dUdz = diff(U,z)
 
-        RHS = Matrix([vx,vy,vz,((-1*dUdx) + 2*vy),((-1*dUdy)- 2*vx),(-1*dUdz)])
+        RHS = Matrix([vx,vy,vz,((-1.*dUdx) + 2.*vy),((-1.*dUdy)- 2.*vx),(-1.*dUdz)])
 
         self.vars = Matrix([x,y,z,vx,vy,vz])
         self.dynamics = RHS
