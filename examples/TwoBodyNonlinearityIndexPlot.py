@@ -3,6 +3,7 @@ import numpy as np
 from STMint.STMint import STMint
 import math
 import matplotlib.pyplot as plt
+import numpy.linalg
 
 # Calculating the solutions to non-dimensional two-body motion
 integ = STMint(preset="twoBody", variational_order=2)
@@ -12,11 +13,18 @@ integ = STMint(preset="twoBody", variational_order=2)
 [states,STMs,STTs,ts] = integ.dynVar_int2([0,(20.*math.pi)],[1,0,0,0,1,0], output='all', max_step=.1)
 
 #calculate nonlinearity index from the STMs and STTs over time
-NLIs = []
+NLI1s = []
+NLI2s = []
+NLI3s = []
+NLI4s = []
 norms = []
 for i in range(len(ts)):
-	NLIs.append(integ.nonlin_index(STMs[i], STTs[i]))
-	norms.append(np.linalg.norm(STMs[i]))
+    NLI1s.append(integ.nonlin_index_inf_2(STMs[i], STTs[i]))
+    NLI2s.append(integ.nonlin_index_unfold(STMs[i], STTs[i]))
+    NLI3s.append(integ.nonlin_index_2(STMs[i], STTs[i]))
+    NLI4s.append(integ.nonlin_index_frob(STMs[i], STTs[i]))
+    #NLI4s.append(np.linalg.norm(np.reshape(STTs[i], (len(STTs[i]),len(STTs[i])**2)), 'fro')/np.linalg.norm(STMs[i],'fro'))
+    norms.append(np.linalg.norm(STMs[i]))
 
 
 # Plotting
@@ -30,7 +38,14 @@ for i in range(2,21,2):
     xlabels.append(str(i) + r'$\pi$')
 
 plt.figure(figsize=(8,6))
-plt.plot(ts,NLIs)
+plt.plot(ts,np.array(NLI2s)-np.array(NLI3s))
+plt.plot(ts,np.array(NLI4s)-np.array(NLI3s))
+
+plt.figure(figsize=(8,6))
+plt.plot(ts,NLI1s)
+plt.plot(ts,NLI2s)
+plt.plot(ts,NLI3s)
+plt.plot(ts,NLI4s)
 plt.title("Nonlinearity Associated With Non-dimensional Circular Two-Body Motion")
 plt.xlabel("Time")
 plt.xticks(xvals,xlabels)

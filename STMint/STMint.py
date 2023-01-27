@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 import math
 from astropy import constants as const
 from astropy import units as u
-from scipy.linalg import eigh, norm
+from scipy.linalg import eigh, norm, svd
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -546,7 +546,7 @@ class STMint:
             return allVecAndSTM
         
 
-    def nonlin_index(self, stm, stt):
+    def nonlin_index_inf_2(self, stm, stt):
         """ Function to calculate the nonlinearity index
 
        The induced infinity-2 norm is used in this calculation
@@ -568,6 +568,69 @@ class STMint:
             sttNorm = max(sttNorm, abs(max(w, key=abs)))
             rowNorm = norm(stm[i,:])
             stmNorm = max(stmNorm, rowNorm)
+        return sttNorm/stmNorm
+
+    def nonlin_index_unfold(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+       The induced 2 norm of the unfolded STT is used in this calculation
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        dim = len(stm)
+        sttNorm = norm(np.reshape(stt,(dim, dim**2)), 2)
+        stmNorm = norm(stm, 2)
+        return sttNorm/stmNorm
+
+    def nonlin_index_frob(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+       The frobenius norm of the STT is used in this calculation
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        dim = len(stm)
+        sttNorm = norm(np.reshape(stt,(dim, dim**2)), "fro")
+        stmNorm = norm(stm, "fro")
+        return sttNorm/stmNorm
+
+    def nonlin_index_2(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+       An approximation of the induced 2 norm of the STT is used in this calculation
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        _, _, vh = svd(stm)
+        stmVVec = vh[0, :]
+        _, _, vh1 = svd(np.einsum('ijk,k->ij', stt, stmVVec))
+        stt_vec = vh1[0, :]
+        sttNorm = norm(np.einsum('ijk,j,k->i', stt, stt_vec, stt_vec), 2)
+        stmNorm = norm(stm, 2)
         return sttNorm/stmNorm
 
 
