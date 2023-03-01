@@ -17,13 +17,16 @@ NLI1s = []
 NLI2s = []
 NLI3s = []
 NLI4s = []
+NLI5s = []
+NLI6s = []
 norms = []
 for i in range(len(ts)):
     NLI1s.append(integ.nonlin_index_inf_2(STMs[i], STTs[i]))
     NLI2s.append(integ.nonlin_index_unfold(STMs[i], STTs[i]))
     NLI3s.append(integ.nonlin_index_2(STMs[i], STTs[i]))
     NLI4s.append(integ.nonlin_index_frob(STMs[i], STTs[i]))
-    #NLI4s.append(np.linalg.norm(np.reshape(STTs[i], (len(STTs[i]),len(STTs[i])**2)), 'fro')/np.linalg.norm(STMs[i],'fro'))
+    NLI5s.append(integ.nonlin_index_2_eigenvector(STMs[i], STTs[i]))
+    NLI6s.append(integ.nonlin_index_2_eigenvector_symmetrizing(STMs[i], STTs[i]))
     norms.append(np.linalg.norm(STMs[i]))
 
 
@@ -38,8 +41,10 @@ for i in range(2,21,2):
     xlabels.append(str(i) + r'$\pi$')
 
 plt.figure(figsize=(8,6))
-plt.plot(ts,np.array(NLI2s)-np.array(NLI3s))
-plt.plot(ts,np.array(NLI4s)-np.array(NLI3s))
+#plt.plot(ts,np.array(NLI2s)-np.array(NLI3s))
+#plt.plot(ts,np.array(NLI4s)-np.array(NLI3s))
+#plt.plot(ts,np.array(NLI5s)-np.array(NLI3s))
+plt.plot(ts,np.array(NLI5s)-np.array(NLI6s))
 
 plt.figure(figsize=(8,6))
 plt.plot(ts,NLI1s)

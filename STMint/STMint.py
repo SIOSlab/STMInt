@@ -5,6 +5,9 @@ import math
 from astropy import constants as const
 from astropy import units as u
 from scipy.linalg import eigh, norm, svd
+import string
+import itertools
+import functools
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -613,7 +616,9 @@ class STMint:
     def nonlin_index_2(self, stm, stt):
         """ Function to calculate the nonlinearity index
 
-       An approximation of the induced 2 norm of the STT is used in this calculation
+        An approximation of the induced 2 norm of the STT is used in this calculation
+        One iteration of singular value decomposition of the contracted STT is taken
+        with the maximal right singular vector of the STM as an initial guess.
 
         Args:
             stm (np array)
@@ -632,7 +637,188 @@ class STMint:
         sttNorm = norm(np.einsum('ijk,j,k->i', stt, stt_vec, stt_vec), 2)
         stmNorm = norm(stm, 2)
         return sttNorm/stmNorm
+        
+    def power_iterate_string(self, tens):
+        """ Function to calculate the index string for einsum (up to 26 dimensional tensor)
 
+        Args:
+            tens (np array)
+                Tensor
+
+        Returns:
+            einsum string to perform power iteration (string)
+        """
+        #looks like "zabcd,abcd->z"
+        stringEin = "z"
+        stringContract = string.ascii_lowercase[:tens.ndim-1]
+        secondString = ""
+        for char in stringContract:
+            secondString += "," + char
+        stringEin += stringContract + secondString + "->" "z"
+        return stringEin
+    
+    
+    def power_iterate(self, stringEin, tensOrder, tens, vec):
+        """ Function to perform one higher order power iteration on a symmetric tensor
+
+        Args:
+            stringEin (string)
+                String to instruct einsum to perform contractions
+            tensOrder (int)
+                Order of the tensor
+            tens (np array)
+                Tensor
+            vec (np array)
+                Vector
+
+        Returns:
+            vecNew (np array)
+            vecNorm (float)
+            
+        """
+        vecNew = np.einsum(stringEin, tens, *([vec] * (tensOrder-1)))
+        vecNorm = np.linalg.norm(vecNew)
+        return vecNew/vecNorm, vecNorm 
+    
+    def power_iteration(self, tens, vecGuess, maxIter, tol):
+        """ Function to perform higher order power iteration on a symmetric tensor
+
+        Args:
+            tens (np array)
+                Tensor
+            vec (np array)
+                Vector
+            maxIter (int)
+                Max number of iterations to perform
+            tol (float)
+                Tolerance for difference and iterates
+        Returns:
+            eigVec (np array)
+            eigValue (np array)
+        """
+        stringEin = self.power_iterate_string(tens)
+        tensOrder = tens.ndim
+        vec = None
+        vecNorm = None
+        for i in range(maxIter):
+            vecPrev = vecGuess
+            vec, vecNorm = self.power_iterate(stringEin, tensOrder, tens, vecPrev)
+            if np.linalg.norm(vec-vecPrev) < tol:
+                break
+        return vec, vecNorm
+        
+    def symmetrize_tensor(self, tens):
+        """ Symmetrize a tensor
+
+        Args:
+            tens (np array)
+                Tensor
+        Returns:
+            symTens (np array)
+        """
+        dim = tens.ndim
+        rangedim = range(dim)
+        tensDiv = tens/math.factorial(dim)
+        permutes = map(lambda sigma: np.moveaxis(tensDiv, rangedim, sigma), itertools.permutations(range(dim)))
+        symTens = functools.reduce(lambda x, y: x+y, permutes)
+        return symTens
+    
+    def power_iterate_symmetrizing(self, stringEin, tensOrder, tens, vec):
+        """ Function to perform one higher order power iteration on a non-symmetric tensor
+
+        Args:
+            stringEin (string)
+                String to instruct einsum to perform contractions
+            tensOrder (int)
+                Order of the tensor
+            tens (np array)
+                Tensor
+            vec (np array)
+                Vector
+
+        Returns:
+            vecNew (np array)
+            vecNorm (float)
+        """
+        dim = tens.ndim
+        vecs = map(lambda i: np.einsum(stringEin, np.swapaxes(tens, 0, i), *([vec] * (tensOrder-1))), range(dim)) 
+        vecNew = functools.reduce(lambda x, y: x+y, vecs)/dim
+        vecNorm = np.linalg.norm(vecNew)
+        return vecNew/vecNorm, vecNorm 
+    
+    def power_iteration_symmetrizing(self, tens, vecGuess, maxIter, tol):
+        """ Function to perform higher order power iteration on a non-symmetric tensor
+
+        Args:
+            tens (np array)
+                Tensor
+            vec (np array)
+                Vector
+            maxIter (int)
+                Max number of iterations to perform
+            tol (float)
+                Tolerance for difference and iterates
+        Returns:
+            eigVec (np array)
+            eigValue (np array)
+        """
+        stringEin = self.power_iterate_string(tens)
+        tensOrder = tens.ndim
+        vec = None
+        vecNorm = None
+        for i in range(maxIter):
+            vecPrev = vecGuess
+            vec, vecNorm = self.power_iterate_symmetrizing(stringEin, tensOrder, tens, vecPrev)
+            if np.linalg.norm(vec-vecPrev) < tol:
+                break
+        return vec, vecNorm
+    
+    def nonlin_index_2_eigenvector(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+        The maximum eigenvalue of the tensor squared
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        _, _, vh = svd(stm)
+        stmVVec = vh[0, :]
+        tensSquared = np.einsum('ijk,ilm->jklm', stt, stt)
+        tensSquaredSym = self.symmetrize_tensor(tensSquared)
+        _, sttNorm = self.power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
+        stmNorm = norm(stm, 2)
+        return math.sqrt(sttNorm)/stmNorm    
+    
+    def nonlin_index_2_eigenvector_symmetrizing(self, stm, stt):
+        """ Function to calculate the nonlinearity index
+
+        The maximum eigenvalue of the tensor squared computed with symmetrization along the way
+
+        Args:
+            stm (np array)
+                State transition matrix
+
+            stt (np array)
+                Second order state transition tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        _, _, vh = svd(stm)
+        stmVVec = vh[0, :]
+        tensSquared = np.einsum('ijk,ilm->jklm', stt, stt)
+        #tensSquaredSym = self.symmetrize_tensor(tensSquared)
+        _, sttNorm = self.power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
+        stmNorm = norm(stm, 2)
+        return math.sqrt(sttNorm)/stmNorm  
+    
 
     def cocycle1(self, stm10, stm21):
         """ Function to find STM along two combined subintervals
