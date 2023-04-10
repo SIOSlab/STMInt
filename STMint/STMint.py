@@ -797,10 +797,10 @@ class STMint:
 
         Args:
             stm (np array)
-                State transition matrix
+                State transition matrix (used to generate guess)
 
             stt (np array)
-                Second order state transition tensor
+                Arbitrary order state transition tensor
 
         Returns:
             nonlinearity_index (float)
@@ -820,10 +820,10 @@ class STMint:
 
         Args:
             stm (np array)
-                State transition matrix
+                State transition matrix (used to generate guess)
 
             stt (np array)
-                Second order state transition tensor
+                Arbitrary order state transition tensor
 
         Returns:
             nonlinearity_index (float)
