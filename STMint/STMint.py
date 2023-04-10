@@ -648,13 +648,30 @@ class STMint:
         Returns:
             einsum string to perform power iteration (string)
         """
-        #looks like "zabcd,abcd->z"
+        assert(tens.ndim <= 26)
+        #looks like "zabcd,a,b,c,d->z"
         stringEin = "z"
         stringContract = string.ascii_lowercase[:tens.ndim-1]
         secondString = ""
         for char in stringContract:
             secondString += "," + char
         stringEin += stringContract + secondString + "->" "z"
+        return stringEin
+
+    def tensor_square_string(self, tens):
+        """ Function to calculate the index string for einsum (up to 1-13 dimensional tensor)
+        Args:
+            tens (np array)
+                Tensor
+
+        Returns:
+            einsum string to perform tensor squaring (string)
+        """
+        assert(tens.ndim < 13)
+        #looks like "abcd,azyx-bcdzyx>"
+        firstString = string.ascii_lowercase[1:tens.ndim]
+        secondString = string.ascii_lowercase[26:26-tens.ndim:-1]
+        stringEin = "a" + firstString + ",a" + secondString + "->" + firstString + secondString
         return stringEin
     
     
@@ -790,7 +807,7 @@ class STMint:
         """
         _, _, vh = svd(stm)
         stmVVec = vh[0, :]
-        tensSquared = np.einsum('ijk,ilm->jklm', stt, stt)
+        tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
         tensSquaredSym = self.symmetrize_tensor(tensSquared)
         _, sttNorm = self.power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
         stmNorm = norm(stm, 2)
@@ -813,7 +830,7 @@ class STMint:
         """
         _, _, vh = svd(stm)
         stmVVec = vh[0, :]
-        tensSquared = np.einsum('ijk,ilm->jklm', stt, stt)
+        tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
         #tensSquaredSym = self.symmetrize_tensor(tensSquared)
         _, sttNorm = self.power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
         stmNorm = norm(stm, 2)
