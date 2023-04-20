@@ -36,8 +36,8 @@ class STMint:
     # Invariant: STM is an nxn sympy Matrix, the dimensions of STM is equal to
     # number of variables used or None
     #
-    # *Attribute variational: the variatonal equations of the dynamical system
-    # Invariant: variational is an n-dimensional sympy Matrix or None
+    # *Attribute variational_order: the order of variatonal equations used for the dynamical system
+    # Invariant: variational_order is and int, namely: 0, 1, or 2
     #
     # *Attribute lambda_dynamics_and_variational: the lambdified dynamic and
     # variational equations
@@ -193,19 +193,6 @@ class STMint:
         self.vars = Matrix([x,y,z,vx,vy,vz])
         self.dynamics = RHS
 
-
-    def second_variational_equations(self, dyn_fn, jac_fn, hes_fn, states, n):
-        #unpack states into three components        
-        state = states[:n]
-        stm = np.reshape(states[n:n*(n+1)], (n, n))
-        stt = np.reshape(states[n*(n+1):], (n, n, n))
-        #time derivative of the various components of the augmented state vector
-        jac = jac_fn(*state)
-        stated = dyn_fn(*state)
-        stmd = np.reshape(np.matmul(jac, stm), (n**2))
-        sttd = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,lj,mk->ijk', hes_fn(*state), stm, stm), (n**3))
-        return np.hstack((stated.flatten(), stmd, sttd))
-
     def setVarEqs(self, variational_order):
         """ This method creates or deletes associated varitional equations with
         given dynmaics
@@ -217,8 +204,11 @@ class STMint:
         are set to none.
 
         Args:
-            variation (boolean)
-                Determines whether to create or delete variational equations.
+            variational_order (int)
+                Order of variational equations to be computed
+                0 - for no variational equations
+                1 - for first order variational equations
+                2 - for first and second order variational equations
         """
         if (variational_order == 1 or variational_order == 2):
             self.jacobian = self.dynamics.jacobian(self.vars.transpose())
@@ -230,15 +220,17 @@ class STMint:
             if (variational_order == 2):
                 #contract the hessian to get rid of spurious dimensions from 
                 #using sympy matrices to calculate derivative
-                self.hessian = tensorcontraction(Array(self.dynamics).diff( 
+                hessian = tensorcontraction(Array(self.dynamics).diff(
                                         Array(self.vars), Array(self.vars)), (1,3,5))
-                self.lambda_hessian = lambdify(self.vars, self.hessian, "numpy")
+                lambda_hessian = lambdify(self.vars, hessian, "numpy")
+
                 self.jacobian = self.dynamics.jacobian(self.vars.transpose())
-                self.lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
-                self.lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
-                self.n = len(self.vars)
+                lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
+
+                lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
+                n = len(self.vars)
                 self.lambda_dynamics_and_variational2 = lambda t, states: self.second_variational_equations(
-                self.lambda_dyn, self.lambda_jacobian, self.lambda_hessian, states, self.n)
+                lambda_dyn, lambda_jacobian, lambda_hessian, states, n)
                             
         else:
             self.jacobian = None
@@ -246,11 +238,52 @@ class STMint:
             self.variational = None
             self.lambda_dynamics_and_variational = None
 
+    def second_variational_equations(self, lambda_dyn, lambda_jacobian, lambda_hessian, states, n):
+        """ This method creates the second order variational equations for given
+        dynamics
 
-# =============================================================================
+        This method begins by unpacking the initial state, state transition matrix
+        (STM), and state transition tensor (STT). Then, the jacobian of the state,
+        time derivative of the state, STM, and STT are calculated. Finally, these
+        are all returned in a single matrix.
+
+        Agrs:
+            lambda_dyn (Lambdafied function)
+                Lambdafied dynamics
+
+            lambda_jacobian (Lambdafied function)
+                Lambdafied jacobian of the dynamics
+
+            lambda_hessian (Lambdafied function)
+                Lambdafied hessian
+
+            states (np array)
+                Initial state of dynamics
+
+            n (int)
+                Dimension of variables
+
+        Returns:
+            Second order variational equational equations
+        """
+        #unpack states into three components
+        state = states[:n]
+        stm = np.reshape(states[n:n*(n+1)], (n, n))
+        stt = np.reshape(states[n*(n+1):], (n, n, n))
+
+        #time derivative of the various components of the augmented state vector
+        jac = lambda_jacobian(*state)
+        dt_state = lambda_dyn(*state)
+        dt_stm = np.reshape(np.matmul(jac, stm), (n**2))
+        dt_stt = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,lj,mk->ijk',
+                                                                           lambda_hessian(*state), stm, stm), (n**3))
+
+        return np.hstack((dt_state.flatten(), dt_stm, dt_stt))
+
+
+# ======================================================================================================================
 # IVP Solver Functions
-# =============================================================================
-
+# ======================================================================================================================
 
     def _dynamics_solver(self, t, y):
         """ Function to mimic right hand side of a dynamic system for integration
@@ -302,10 +335,9 @@ class STMint:
         return lambda_dynamics_and_variational
 
 
-# =============================================================================
+# ======================================================================================================================
 # Clones of solve_ivp
-# =============================================================================
-
+# ======================================================================================================================
 
     def dyn_int(self, t_span, y0, method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
@@ -344,7 +376,6 @@ class STMint:
 
         return solve_ivp(self._dynamics_solver, t_span, y0, method, t_eval,
                         dense_output, events, vectorized, args, **options)
-
 
     def dynVar_int(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
@@ -441,8 +472,6 @@ class STMint:
             allVecAndSTM = [states,STMs,solution.t]
 
             return allVecAndSTM
-            
-            
             
     def dynVar_int2(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
@@ -547,7 +576,11 @@ class STMint:
             allVecAndSTM = [states,STMs,STTs,solution.t]
             
             return allVecAndSTM
-        
+
+
+# ======================================================================================================================
+# Nonlinearity Index Functions
+# ======================================================================================================================
 
     def nonlin_index_inf_2(self, stm, stt):
         """ Function to calculate the nonlinearity index
@@ -637,6 +670,10 @@ class STMint:
         sttNorm = norm(np.einsum('ijk,j,k->i', stt, stt_vec, stt_vec), 2)
         stmNorm = norm(stm, 2)
         return sttNorm/stmNorm
+
+# ======================================================================================================================
+# Power Iteration Functions
+# ======================================================================================================================
         
     def power_iterate_string(self, tens):
         """ Function to calculate the index string for einsum (up to 26 dimensional tensor)
