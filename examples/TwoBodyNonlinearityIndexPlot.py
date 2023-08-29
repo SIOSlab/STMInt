@@ -19,6 +19,7 @@ NLI3s = []
 NLI4s = []
 NLI5s = []
 NLI6s = []
+tensNorms = []
 norms = []
 for i in range(len(ts)):
     NLI1s.append(integ.nonlin_index_inf_2(STMs[i], STTs[i]))
@@ -27,6 +28,7 @@ for i in range(len(ts)):
     NLI4s.append(integ.nonlin_index_frob(STMs[i], STTs[i]))
     NLI5s.append(integ.nonlin_index_2_eigenvector(STMs[i], STTs[i]))
     NLI6s.append(integ.nonlin_index_2_eigenvector_symmetrizing(STMs[i], STTs[i]))
+    tensNorms.append(integ.stt_2_norm(STMs[i], STTs[i]))
     norms.append(np.linalg.norm(STMs[i]))
 
 
@@ -45,6 +47,12 @@ plt.figure(figsize=(8,6))
 #plt.plot(ts,np.array(NLI4s)-np.array(NLI3s))
 #plt.plot(ts,np.array(NLI5s)-np.array(NLI3s))
 plt.plot(ts,np.array(NLI5s)-np.array(NLI6s))
+plt.figure(figsize=(8,6))
+plt.title("2nd Order STT Norm Associated With Non-dimensional Circular Two-Body Motion")
+plt.xlabel("Time")
+plt.xticks(xvals,xlabels)
+plt.ylabel("Tensor 2-Norm")
+plt.plot(ts,tensNorms)
 
 plt.figure(figsize=(8,6))
 plt.plot(ts,NLI1s)

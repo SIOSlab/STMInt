@@ -884,6 +884,46 @@ class STMint:
         _, sttNorm = self.power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
         stmNorm = norm(stm, 2)
         return math.sqrt(sttNorm)/stmNorm  
+
+    def stt_2_norm(self, stm, stt):
+        """ Function to calculate the norm of a state transition tensor
+
+        The maximum eigenvalue of the tensor squared
+
+        Args:
+            stm (np array)
+                State transition matrix (used to generate guess)
+
+            stt (np array)
+                Arbitrary order state transition tensor
+
+        Returns:
+            2-norm of the tensor (float)
+        """
+        # generate initial guess from maximum right singular vector of stm
+        _, _, vh = svd(stm)
+        stmVVec = vh[0, :]
+        tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
+        _, sttNorm = self.power_iteration(tensSquared, stmVVec, 20, 1e-3)
+        return math.sqrt(sttNorm)   
+
+    def tensor_2_norm(self, tens, guessVec):
+        """ Function to calculate the norm of a state transition tensor
+
+        The square root of the maximum eigenvalue of the tensor squared
+
+        Args:
+            tens (np array)
+                Arbitrary 1-m tensor
+            guessVec (np array)
+                Guess vector for input that maximizes the tensor
+
+        Returns:
+            nonlinearity_index (float)
+        """
+        tensSquared = np.einsum(self.tensor_square_string(tens), tens, tens)
+        _, tensNorm = self.power_iteration(tensSquared, guessVec, 20, 1e-3)
+        return math.sqrt(tensNorm)
     
 
     def cocycle1(self, stm10, stm21):
