@@ -71,12 +71,6 @@ class STMint:
             preset_mult (float)
                 Constant multiple of potential V for 2-body motion
 
-            variational (boolean)
-                Whether variational equations will be created
-
-            const_mult (float)
-                Constant multiple of potential V for 2-body motion
-
             variational_order (int)
                 Order of variational equations to be computed
                 0 - for no variational equations
@@ -125,9 +119,9 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "Earth" in preset:
-            V = const.GM_earth/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            V = (const.GM_earth / 1000)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
         if "Sun" in preset:
-            V = const.GM_sun/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            V = (const.GM_sun / 1000)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
         else:
             V = preset_mult/sqrt(x**2+y**2+z**2)
 
@@ -264,7 +258,7 @@ class STMint:
                 Dimension of variables
 
         Returns:
-            Second order variational equational equations
+            Second order variational equations
         """
         #unpack states into three components
         state = states[:n]
@@ -288,8 +282,8 @@ class STMint:
     def _dynamics_solver(self, t, y):
         """ Function to mimic right hand side of a dynamic system for integration
 
-        Method unpacks initial coniditions y from solve_ivp and sends it to the
-        predefined lamdified dynamics.
+        Method unpacks initial conditions y from solve_ivp and sends it to the
+        predefined lambdified dynamics.
 
         Args:
             t (float)
@@ -302,18 +296,16 @@ class STMint:
             lambda_dynamics (float n array)
                 Array of values of dynamics subjected to initial conditions
         """
-
         lambda_dynamics = self.lambda_dynamics(*y).flatten()
 
         return lambda_dynamics
 
-
     def _dynamics_and_variational_solver(self, t, y):
         """ Function to mimic right hand side of a dynamic system with variational
-            equations integrattion
+            equations integration
 
-        Method unpacks initial coniditions y from solve_ivp and sends it to the
-        predefined lamdified dynamics and variational equations.
+        Method unpacks initial conditions y from solve_ivp and sends it to the
+        predefined lambdified dynamics and variational equations.
 
         Args:
             t (float)
@@ -344,7 +336,7 @@ class STMint:
                             args=None, **options):
         """ Clone of solve_ivp
 
-        Method uses _dynamics_solver to solve an innitial value prolbem with given
+        Method uses _dynamics_solver to solve an initial value problem with given
         dynamics. This method has the same arguments and Scipy's solve_ivp function.
 
         Non-optional arguments are listed below.
@@ -382,8 +374,8 @@ class STMint:
                             args=None, **options):
         """ Clone of solve_ivp
 
-        Method uses _dynamics_and_variational_solver to solve an innitial value
-        prolbem with given dynamics and variational equations. This method has
+        Method uses _dynamics_and_variational_solver to solve an initial value
+        problem with given dynamics and variational equations. This method has
         the same arguments and Scipy's solve_ivp function.
 
         Non-optional arguments are listed below.
@@ -424,7 +416,7 @@ class STMint:
 
             If output is 'final'
                 vecAndSTM (tuple)
-                    A tuple with the state vector and STM
+                    A tuple with the state vector and STM as np arrays
 
             If output is 'all'
                 allVecAndSTM (3d array)
@@ -432,7 +424,6 @@ class STMint:
                     the complete set of states of the solution. The second array
                     is the complete set of STMs of the solution. The third array
                     is the complete set of time values of the solution.
-
         """
         assert self.variational != None, "Variational equations have not been created"
         initCon = np.vstack((np.array(y0),np.eye(len(self.vars))))
@@ -449,7 +440,7 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTM = (np.array([t_f[:6]]), np.reshape(t_f[6:], (6,6)))
+            vecAndSTM = (np.array(t_f[:6]), np.reshape(t_f[6:], (6,6)))
 
             return vecAndSTM
         if 'all' in output:
@@ -478,9 +469,11 @@ class STMint:
                             args=None, **options):
         """ Clone of solve_ivp
 
-        Method uses _dynamics_and_variational_solver to solve an innitial value
-        prolbem with given dynamics and variational equations. This method has
-        the same arguments and Scipy's solve_ivp function.
+        Method uses _dynamics_and_variational_solver to solve an initial value
+        problem with given dynamics and variational equations. This method has
+        the same arguments and Scipy's solve_ivp function. Note that this method
+        also integrates second order variational equations to obtain a second
+        order state transition tensor.
 
         Non-optional arguments are listed below.
         See documentation of solve_ivp for a full list and description of arguments
@@ -501,9 +494,9 @@ class STMint:
                     raw
                         Raw bunch object from solve_ivp
                     final
-                        The state vector and STM at the final time only
+                        The state vector, STM, and STT at the final time only
                     all
-                        The state vector and STM at all times
+                        The state vector, STM, and STT at all times
 
         Returns:
             If output is 'raw'
@@ -519,8 +512,8 @@ class STMint:
                         None if dense_output was set to False.
 
             If output is 'final'
-                vecAndSTM (tuple)
-                    A tuple with the state vector and STM
+                vecAndSTTs (tuple)
+                    A tuple with the state vector, STM, and STT
 
             If output is 'all'
                 allVecAndSTM (4d array)
@@ -529,13 +522,12 @@ class STMint:
                     is the complete set of STMs of the solution. The third array 
                     is the complete set of STTs of the solution. The fourth array
                     is the complete set of time values of the solution.
-
         """
         assert self.variational != None, "Variational equations have not been created"
-        initCon = np.hstack((np.array(y0), np.eye(len(self.vars)).flatten(), np.zeros(len(self.vars)**3)))
+        init_con = np.hstack((np.array(y0), np.eye(len(self.vars)).flatten(), np.zeros(len(self.vars)**3)))
 
         solution = solve_ivp(self.lambda_dynamics_and_variational2, t_span,
-                            initCon, method, t_eval, dense_output,
+                            init_con, method, t_eval, dense_output,
                             events, vectorized, args, **options)
 
         if 'raw' in output:
@@ -546,7 +538,7 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTTs = (np.array([t_f[:self.n]]),np.reshape(t_f[self.n:self.n*(self.n+1)], 
+            vecAndSTTs = (np.array(t_f[:self.n]),np.reshape(t_f[self.n:self.n*(self.n+1)],
                             (self.n, self.n)), np.reshape(t_f[self.n*(self.n+1):], (self.n, self.n, self.n)))
 
             return vecAndSTTs
@@ -715,20 +707,25 @@ class STMint:
     def power_iterate(self, stringEin, tensOrder, tens, vec):
         """ Function to perform one higher order power iteration on a symmetric tensor
 
+        Single step
+
         Args:
             stringEin (string)
                 String to instruct einsum to perform contractions
+
             tensOrder (int)
                 Order of the tensor
+
             tens (np array)
                 Tensor
+
             vec (np array)
                 Vector
 
         Returns:
             vecNew (np array)
+
             vecNorm (float)
-            
         """
         vecNew = np.einsum(stringEin, tens, *([vec] * (tensOrder-1)))
         vecNorm = np.linalg.norm(vecNew)
@@ -740,14 +737,19 @@ class STMint:
         Args:
             tens (np array)
                 Tensor
+
             vec (np array)
                 Vector
+
             maxIter (int)
                 Max number of iterations to perform
+
             tol (float)
                 Tolerance for difference and iterates
+
         Returns:
             eigVec (np array)
+
             eigValue (np array)
         """
         stringEin = self.power_iterate_string(tens)
@@ -767,6 +769,7 @@ class STMint:
         Args:
             tens (np array)
                 Tensor
+
         Returns:
             symTens (np array)
         """
@@ -783,15 +786,19 @@ class STMint:
         Args:
             stringEin (string)
                 String to instruct einsum to perform contractions
+
             tensOrder (int)
                 Order of the tensor
+
             tens (np array)
                 Tensor
+
             vec (np array)
                 Vector
 
         Returns:
             vecNew (np array)
+
             vecNorm (float)
         """
         dim = tens.ndim
@@ -806,14 +813,19 @@ class STMint:
         Args:
             tens (np array)
                 Tensor
+
             vec (np array)
                 Vector
+
             maxIter (int)
                 Max number of iterations to perform
+
             tol (float)
                 Tolerance for difference and iterates
+
         Returns:
             eigVec (np array)
+
             eigValue (np array)
         """
         stringEin = self.power_iterate_string(tens)
@@ -890,7 +902,9 @@ class STMint:
             stm20 (np array)
                 State transition matrix from time 0 to 2
         """
-        np.matmul(stm21, stm10)
+        stm20 = np.matmul(stm21, stm10)
+
+        return stm20
 
 
     def cocycle2(self, stm10, stt10, stm21, stt21):
@@ -915,11 +929,13 @@ class STMint:
         Returns:
             stm20 (np array)
                 State transition matrix from time 0 to 2
+
             stt20 (np array)
                 State transition tensor from time 0 to 2            
         """
         stm20 = np.matmul(stm21, stm10)
         stt20 = np.einsum('il,ljk->ijk', stm21, stt10) + np.einsum('ilm,lj,mk->ijk', stt21, stm10, stm10)
+
         return [stm20, stt20]
 
         
