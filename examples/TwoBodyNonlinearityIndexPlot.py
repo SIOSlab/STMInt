@@ -1,6 +1,7 @@
 from sympy import *
 import numpy as np
 from STMint.STMint import STMint
+from STMint import TensorNormUtilities as tnu
 import math
 import matplotlib.pyplot as plt
 import numpy.linalg
@@ -22,13 +23,13 @@ NLI6s = []
 tensNorms = []
 norms = []
 for i in range(len(ts)):
-    NLI1s.append(integ.nonlin_index_inf_2(STMs[i], STTs[i]))
-    NLI2s.append(integ.nonlin_index_unfold(STMs[i], STTs[i]))
-    NLI3s.append(integ.nonlin_index_2(STMs[i], STTs[i]))
-    NLI4s.append(integ.nonlin_index_frob(STMs[i], STTs[i]))
-    NLI5s.append(integ.nonlin_index_2_eigenvector(STMs[i], STTs[i]))
-    NLI6s.append(integ.nonlin_index_2_eigenvector_symmetrizing(STMs[i], STTs[i]))
-    tensNorms.append(integ.stt_2_norm(STMs[i], STTs[i]))
+    NLI1s.append(tnu.nonlin_index_inf_2(STMs[i], STTs[i]))
+    NLI2s.append(tnu.nonlin_index_unfold(STMs[i], STTs[i]))
+    NLI3s.append(tnu.nonlin_index_2(STMs[i], STTs[i]))
+    NLI4s.append(tnu.nonlin_index_frob(STMs[i], STTs[i]))
+    NLI5s.append(tnu.nonlin_index_2_eigenvector(STMs[i], STTs[i]))
+    NLI6s.append(tnu.nonlin_index_2_eigenvector_symmetrizing(STMs[i], STTs[i]))
+    tensNorms.append(tnu.stt_2_norm(STMs[i], STTs[i]))
     norms.append(np.linalg.norm(STMs[i]))
 
 
