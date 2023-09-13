@@ -1,13 +1,8 @@
 from sympy import *
 import numpy as np
 from scipy.integrate import solve_ivp
-import math
 from astropy import constants as const
 from astropy import units as u
-from scipy.linalg import eigh, norm, svd
-import string
-import itertools
-import functools
 
 class STMint:
     """ State Transition Matrix Integrator
@@ -119,9 +114,10 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "Earth" in preset:
-            V = (const.GM_earth / 1000)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            V = (const.GM_earth)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            print(V)
         if "Sun" in preset:
-            V = (const.GM_sun / 1000)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            V = (const.GM_sun)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
         else:
             V = preset_mult/sqrt(x**2+y**2+z**2)
 
@@ -460,6 +456,7 @@ class STMint:
                 states.append(state)
                 STMs.append(np.reshape(stm, (l,l)))
 
+            ## Change this!
             allVecAndSTM = [states,STMs,solution.t]
 
             return allVecAndSTM
@@ -530,6 +527,7 @@ class STMint:
                             init_con, method, t_eval, dense_output,
                             events, vectorized, args, **options)
 
+        l = len(self.vars)
         if 'raw' in output:
             return solution
         if 'final' in output:
@@ -538,15 +536,14 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTTs = (np.array(t_f[:self.n]),np.reshape(t_f[self.n:self.n*(self.n+1)],
-                            (self.n, self.n)), np.reshape(t_f[self.n*(self.n+1):], (self.n, self.n, self.n)))
+            vecAndSTTs = (np.array(t_f[:l]),np.reshape(t_f[l:l*(l+1)],
+                            (l, l)), np.reshape(t_f[l*(l+1):], (l, l, l)))
 
             return vecAndSTTs
         if 'all' in output:
             states = []
             STMs = []
             STTs = []
-            l = len(self.vars)
 
             for i in range(len(solution.y[0])):
                 state = []

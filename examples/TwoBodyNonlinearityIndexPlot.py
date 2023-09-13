@@ -1,4 +1,3 @@
-from sympy import *
 import numpy as np
 from STMint.STMint import STMint
 from STMint import TensorNormUtilities as tnu

@@ -1,21 +1,16 @@
-from sympy import *
 import numpy as np
-from scipy.integrate import solve_ivp
 import math
-from astropy import constants as const
-from astropy import units as u
 from scipy.linalg import eigh, norm, svd
 import string
 import itertools
 import functools
-from STMint import STMint
 
 
 # ======================================================================================================================
 # Nonlinearity Index Functions
 # ======================================================================================================================
 
-def nonlin_index_inf_2(self, stm, stt):
+def nonlin_index_inf_2(stm, stt):
     """ Function to calculate the nonlinearity index
 
    The induced infinity-2 norm is used in this calculation
@@ -40,7 +35,7 @@ def nonlin_index_inf_2(self, stm, stt):
     return sttNorm / stmNorm
 
 
-def nonlin_index_unfold(self, stm, stt):
+def nonlin_index_unfold(stm, stt):
     """ Function to calculate the nonlinearity index
 
    The induced 2 norm of the unfolded STT is used in this calculation
@@ -61,7 +56,7 @@ def nonlin_index_unfold(self, stm, stt):
     return sttNorm / stmNorm
 
 
-def nonlin_index_frob(self, stm, stt):
+def nonlin_index_frob(stm, stt):
     """ Function to calculate the nonlinearity index
 
    The frobenius norm of the STT is used in this calculation
@@ -82,7 +77,7 @@ def nonlin_index_frob(self, stm, stt):
     return sttNorm / stmNorm
 
 
-def nonlin_index_2(self, stm, stt):
+def nonlin_index_2(stm, stt):
     """ Function to calculate the nonlinearity index
 
     An approximation of the induced 2 norm of the STT is used in this calculation
@@ -112,7 +107,7 @@ def nonlin_index_2(self, stm, stt):
 # Power Iteration Functions
 # ======================================================================================================================
 
-def power_iterate_string(self, tens):
+def power_iterate_string(tens):
     """ Function to calculate the index string for einsum (up to 26 dimensional tensor)
 
     Args:
@@ -133,7 +128,7 @@ def power_iterate_string(self, tens):
     return stringEin
 
 
-def tensor_square_string(self, tens):
+def tensor_square_string(tens):
     """ Function to calculate the index string for einsum (up to 1-13 dimensional tensor)
     Args:
         tens (np array)
@@ -150,7 +145,7 @@ def tensor_square_string(self, tens):
     return stringEin
 
 
-def power_iterate(self, stringEin, tensOrder, tens, vec):
+def power_iterate(stringEin, tensOrder, tens, vec):
     """ Function to perform one higher order power iteration on a symmetric tensor
 
     Single step
@@ -178,7 +173,7 @@ def power_iterate(self, stringEin, tensOrder, tens, vec):
     return vecNew / vecNorm, vecNorm
 
 
-def power_iteration(self, tens, vecGuess, maxIter, tol):
+def power_iteration(tens, vecGuess, maxIter, tol):
     """ Function to perform higher order power iteration on a symmetric tensor
 
     Args:
@@ -199,19 +194,19 @@ def power_iteration(self, tens, vecGuess, maxIter, tol):
 
         eigValue (np array)
     """
-    stringEin = self.power_iterate_string(tens)
+    stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
     vec = None
     vecNorm = None
     for i in range(maxIter):
         vecPrev = vecGuess
-        vec, vecNorm = self.power_iterate(stringEin, tensOrder, tens, vecPrev)
+        vec, vecNorm = power_iterate(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break
     return vec, vecNorm
 
 
-def symmetrize_tensor(self, tens):
+def symmetrize_tensor(tens):
     """ Symmetrize a tensor
 
     Args:
@@ -229,7 +224,7 @@ def symmetrize_tensor(self, tens):
     return symTens
 
 
-def power_iterate_symmetrizing(self, stringEin, tensOrder, tens, vec):
+def power_iterate_symmetrizing(stringEin, tensOrder, tens, vec):
     """ Function to perform one higher order power iteration on a non-symmetric tensor
 
     Args:
@@ -257,7 +252,7 @@ def power_iterate_symmetrizing(self, stringEin, tensOrder, tens, vec):
     return vecNew / vecNorm, vecNorm
 
 
-def power_iteration_symmetrizing(self, tens, vecGuess, maxIter, tol):
+def power_iteration_symmetrizing(tens, vecGuess, maxIter, tol):
     """ Function to perform higher order power iteration on a non-symmetric tensor
 
     Args:
@@ -278,19 +273,19 @@ def power_iteration_symmetrizing(self, tens, vecGuess, maxIter, tol):
 
         eigValue (np array)
     """
-    stringEin = self.power_iterate_string(tens)
+    stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
     vec = None
     vecNorm = None
     for i in range(maxIter):
         vecPrev = vecGuess
-        vec, vecNorm = self.power_iterate_symmetrizing(stringEin, tensOrder, tens, vecPrev)
+        vec, vecNorm = power_iterate_symmetrizing(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break
     return vec, vecNorm
 
 
-def nonlin_index_2_eigenvector(self, stm, stt):
+def nonlin_index_2_eigenvector(stm, stt):
     """ Function to calculate the nonlinearity index
 
     The maximum eigenvalue of the tensor squared
@@ -307,14 +302,14 @@ def nonlin_index_2_eigenvector(self, stm, stt):
     """
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
-    tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
-    tensSquaredSym = self.symmetrize_tensor(tensSquared)
-    _, sttNorm = self.power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
+    tensSquared = np.einsum(tensor_square_string(stt), stt, stt)
+    tensSquaredSym = symmetrize_tensor(tensSquared)
+    _, sttNorm = power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
     stmNorm = norm(stm, 2)
     return math.sqrt(sttNorm) / stmNorm
 
 
-def nonlin_index_2_eigenvector_symmetrizing(self, stm, stt):
+def nonlin_index_2_eigenvector_symmetrizing(stm, stt):
     """ Function to calculate the nonlinearity index
 
     The maximum eigenvalue of the tensor squared computed with symmetrization along the way
@@ -331,37 +326,39 @@ def nonlin_index_2_eigenvector_symmetrizing(self, stm, stt):
     """
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
-    tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
-    # tensSquaredSym = self.symmetrize_tensor(tensSquared)
-    _, sttNorm = self.power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
+    tensSquared = np.einsum(tensor_square_string(stt), stt, stt)
+    # tensSquaredSym = symmetrize_tensor(tensSquared)
+    _, sttNorm = power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
     stmNorm = norm(stm, 2)
     return math.sqrt(sttNorm) / stmNorm
 
+def stt_2_norm(stm, stt):
+    """ Function to calculate the norm of the state transition tensor, and the input unit vector that leads to that norm.
 
-def stt_2_norm(self, stm, stt):
-    """ Function to calculate the norm of a state transition tensor
-
-    The maximum eigenvalue of the tensor squared
+    The maximum eigenvalue of the tensor squared computed with symmetrization along the way
 
     Args:
         stm (np array)
-            State transition matrix (used to generate guess)
+            State transition matrix
 
         stt (np array)
-            Arbitrary order state transition tensor
+            Second order state transition tensor
 
     Returns:
-        2-norm of the tensor (float)
+        sttArgMax (np array)
+            Input unit vector that maximizes the STT
+        sttNorm (float)
+            Norm of the STT
     """
-    # generate initial guess from maximum right singular vector of stm
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
-    tensSquared = np.einsum(self.tensor_square_string(stt), stt, stt)
-    _, sttNorm = self.power_iteration(tensSquared, stmVVec, 20, 1e-3)
-    return math.sqrt(sttNorm)
+    tensSquared = np.einsum('ijk,ilm->jklm', stt, stt)
+    # tensSquaredSym = self.symmetrize_tensor(tensSquared)
+    sttArgMax, sttNorm = power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
+    return sttArgMax, np.sqrt(sttNorm)
 
 
-def tensor_2_norm(self, tens, guessVec):
+def tensor_2_norm(tens, guessVec):
     """ Function to calculate the norm of a state transition tensor
 
     The square root of the maximum eigenvalue of the tensor squared
@@ -375,12 +372,12 @@ def tensor_2_norm(self, tens, guessVec):
     Returns:
         nonlinearity_index (float)
     """
-    tensSquared = np.einsum(self.tensor_square_string(tens), tens, tens)
-    _, tensNorm = self.power_iteration(tensSquared, guessVec, 20, 1e-3)
+    tensSquared = np.einsum(tensor_square_string(tens), tens, tens)
+    _, tensNorm = power_iteration(tensSquared, guessVec, 20, 1e-3)
     return math.sqrt(tensNorm)
 
 
-def cocycle1(self, stm10, stm21):
+def cocycle1(stm10, stm21):
     """ Function to find STM along two combined subintervals
 
    The cocycle conditon equation is used to find Phi(t2,t_0)=Phi(t2,t_1)*Phi(t1,t_0)
@@ -401,7 +398,7 @@ def cocycle1(self, stm10, stm21):
     return stm20
 
 
-def cocycle2(self, stm10, stt10, stm21, stt21):
+def cocycle2(stm10, stt10, stm21, stt21):
     """ Function to find STM and STT along two combined subintervals
 
    The cocycle conditon equation is used to find Phi(t2,t0)=Phi(t2,t1)*Phi(t1,t0)
@@ -431,6 +428,3 @@ def cocycle2(self, stm10, stt10, stm21, stt21):
     stt20 = np.einsum('il,ljk->ijk', stm21, stt10) + np.einsum('ilm,lj,mk->ijk', stt21, stm10, stm10)
 
     return [stm20, stt20]
-
-
-

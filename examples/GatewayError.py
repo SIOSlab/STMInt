@@ -1,8 +1,6 @@
-from sympy import *
 import numpy as np
 from STMint.STMint import STMint
 import matplotlib.pyplot as plt
-import random
 
 # Gateway Nrho ics: transfer sampling error
 mu = 1.0/(81.30059 + 1.0)
@@ -13,7 +11,6 @@ period = 1.5111111111111111111111111111111111111111
 
 x_0 = np.array([x0, 0, z0, 0, yd0, 0])
 
-# Step 1
 def calc_delta_v_0(integrator, transfer_time, x_0, delta_r_f_star):
     phi = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
 
@@ -23,7 +20,6 @@ def calc_delta_v_0(integrator, transfer_time, x_0, delta_r_f_star):
 
     return np.matmul(phi_rv_inv, delta_r_f_star)
 
-# Step 2
 
 def calc_delta_r_f_error(integrator, transfer_time, x_0, delta_r_f_star):
     v_0 = calc_delta_v_0(integrator, transfer_time, x_0, delta_r_f_star)
@@ -36,7 +32,6 @@ def calc_delta_r_f_error(integrator, transfer_time, x_0, delta_r_f_star):
 
     return np.linalg.norm((delta_r_f_star - delta_r_f), ord=2)
 
-# Step 3
 
 def calc_sphere_max_error(integrator, transfer_time, x_0, r, n):
     samples = np.random.multivariate_normal([0, 0, 0], np.identity(3), n)

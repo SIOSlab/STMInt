@@ -4,6 +4,7 @@ import numpy as np
 from STMint.STMint import STMint
 from util import skew, findSTM
 import math
+from STMint import TensorNormUtilities as tnu
 
 class TestTwoBodyMotion(unittest.TestCase):
     def setUp(self):
@@ -48,7 +49,7 @@ class TestTwoBodyMotion(unittest.TestCase):
         self.testDynamicsAndVariational2_10 = self.presetTest.dynVar_int2([0,(2*math.pi)],
                                                     [1,0,0,0,1,0], output='final', max_step=.001)
         #run the nonlinearity index calculation
-        nonlinearity_index = self.presetTest.nonlin_index(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2])
+        nonlinearity_index = tnu.nonlin_index_2_eigenvector(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2])
 
         #find second leg of stm and stt
         self.testDynamicsAndVariational2_21 = self.presetTest.dynVar_int2([2*math.pi, 3*math.pi],
@@ -57,7 +58,7 @@ class TestTwoBodyMotion(unittest.TestCase):
         self.testDynamicsAndVariational2_20 = self.presetTest.dynVar_int2([0, 3*math.pi],
                                                     [1,0,0,0,1,0], output='final', max_step=.001)
         stt2_reference = self.testDynamicsAndVariational2_20[2]
-        stt2_cocycle = self.presetTest.cocycle2(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2], 
+        stt2_cocycle = tnu.cocycle2(self.testDynamicsAndVariational2_10[1], self.testDynamicsAndVariational2_10[2],
                             self.testDynamicsAndVariational2_21[1], self.testDynamicsAndVariational2_21[2])[1]
         self.assertTrue(np.amax(np.abs((stt2_cocycle-stt2_reference))) < 1E-8)
 
