@@ -10,9 +10,9 @@ integ = STMint(preset="twoBody", variational_order=2)
 
 #integrate variational equations
 #10 periods of a circular orbit with unit radius
-[states,STMs,STTs,ts] = integ.dynVar_int2([0,(20.*math.pi)],[1,0,0,0,1,0], output='all', max_step=.1)
+states, stms, stts, ts = integ.dynVar_int2([0,(20.*math.pi)],[1,0,0,0,1,0], output='all', max_step=.1)
 
-#calculate nonlinearity index from the STMs and STTs over time
+#calculate nonlinearity index from the stms and stts over time
 NLI1s = []
 NLI2s = []
 NLI3s = []
@@ -21,20 +21,23 @@ NLI5s = []
 NLI6s = []
 tensNorms = []
 norms = []
-for i in range(len(ts)):
-    NLI1s.append(tnu.nonlin_index_inf_2(STMs[i], STTs[i]))
-    NLI2s.append(tnu.nonlin_index_unfold(STMs[i], STTs[i]))
-    NLI3s.append(tnu.nonlin_index_2(STMs[i], STTs[i]))
-    NLI4s.append(tnu.nonlin_index_frob(STMs[i], STTs[i]))
-    NLI5s.append(tnu.nonlin_index_2_eigenvector(STMs[i], STTs[i]))
-    NLI6s.append(tnu.nonlin_index_2_eigenvector_symmetrizing(STMs[i], STTs[i]))
-    tensNorms.append(tnu.stt_2_norm(STMs[i], STTs[i]))
-    norms.append(np.linalg.norm(STMs[i]))
 
+# Eliminating first element to not divide by zero in following functions
+ts = ts[1:]
+for i in range(len(ts)):
+    i = i + 1
+    NLI1s.append(tnu.nonlin_index_inf_2(stms[i], stts[i]))
+    NLI2s.append(tnu.nonlin_index_unfold(stms[i], stts[i]))
+    NLI3s.append(tnu.nonlin_index_2(stms[i], stts[i]))
+    NLI4s.append(tnu.nonlin_index_frob(stms[i], stts[i]))
+    NLI5s.append(tnu.nonlin_index_2_eigenvector(stms[i], stts[i]))
+    NLI6s.append(tnu.nonlin_index_2_eigenvector_symmetrizing(stms[i], stts[i]))
+    _, norm = tnu.stt_2_norm(stms[i], stts[i])
+    tensNorms.append(norm)
+    norms.append(np.linalg.norm(stms[i]))
 
 # Plotting
 xvals = []
-
 for i in range(0,21,2):
     xvals.append(math.pi*i)
 

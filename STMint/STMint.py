@@ -411,15 +411,22 @@ class STMint:
                         None if dense_output was set to False.
 
             If output is 'final'
-                vecAndSTM (tuple)
-                    A tuple with the state vector and STM as np arrays
+                state (n-array)
+                    The state vector
+
+                stm (ndarray)
+                    The state transition matrix
 
             If output is 'all'
-                allVecAndSTM (3d array)
-                    A numpy array with three separate arrays. The first array is
-                    the complete set of states of the solution. The second array
-                    is the complete set of STMs of the solution. The third array
-                    is the complete set of time values of the solution.
+                states (n-array)
+                    The state vectors
+
+                stms (ndarray)
+                    The state transition matricies
+
+                ts (n-array)
+                    The time steps of integration
+
         """
         assert self.variational != None, "Variational equations have not been created"
         initCon = np.vstack((np.array(y0),np.eye(len(self.vars))))
@@ -436,9 +443,11 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTM = (np.array(t_f[:6]), np.reshape(t_f[6:], (6,6)))
+            state = np.array(t_f[:6])
+            stm= np.reshape(t_f[6:], (6,6))
 
-            return vecAndSTM
+            return state, stm
+
         if 'all' in output:
             states = []
             STMs = []
@@ -455,11 +464,9 @@ class STMint:
 
                 states.append(state)
                 STMs.append(np.reshape(stm, (l,l)))
+                ts = solution.t
 
-            ## Change this!
-            allVecAndSTM = [states,STMs,solution.t]
-
-            return allVecAndSTM
+            return np.array(states), STMs, ts
             
     def dynVar_int2(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
@@ -509,16 +516,27 @@ class STMint:
                         None if dense_output was set to False.
 
             If output is 'final'
-                vecAndSTTs (tuple)
-                    A tuple with the state vector, STM, and STT
+                state (n-array)
+                    The state vector
+
+                stm (ndarray)
+                    The state transition matrix
+
+                stt (ndarray)
+                    The state transition tensor
 
             If output is 'all'
-                allVecAndSTM (4d array)
-                    A numpy array with three separate arrays. The first array is
-                    the complete set of states of the solution. The second array
-                    is the complete set of STMs of the solution. The third array 
-                    is the complete set of STTs of the solution. The fourth array
-                    is the complete set of time values of the solution.
+                states (n-array)
+                    The state vectors
+
+                stms (ndarray)
+                    The state transition matricies
+
+                stts (ndarray)
+                    The state transition tensors
+
+                ts (n-array)
+                    The time steps of integration
         """
         assert self.variational != None, "Variational equations have not been created"
         init_con = np.hstack((np.array(y0), np.eye(len(self.vars)).flatten(), np.zeros(len(self.vars)**3)))
@@ -536,14 +554,15 @@ class STMint:
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
-            vecAndSTTs = (np.array(t_f[:l]),np.reshape(t_f[l:l*(l+1)],
-                            (l, l)), np.reshape(t_f[l*(l+1):], (l, l, l)))
+            state = np.array(t_f[:l])
+            stm = np.reshape(t_f[l:l*(l+1)],(l, l))
+            stt = np.reshape(t_f[l*(l+1):], (l, l, l))
 
-            return vecAndSTTs
+            return state, stm, stt
         if 'all' in output:
             states = []
-            STMs = []
-            STTs = []
+            stms = []
+            stts = []
 
             for i in range(len(solution.y[0])):
                 state = []
@@ -559,9 +578,8 @@ class STMint:
                         stt.append(solution.y[j][i])
 
                 states.append(state)
-                STMs.append(np.reshape(stm, (l,l)))
-                STTs.append(np.reshape(stt, (l,l,l)))
-
-            allVecAndSTM = [states,STMs,STTs,solution.t]
+                stms.append(np.reshape(stm, (l,l)))
+                stts.append(np.reshape(stt, (l,l,l)))
+                ts = solution.t
             
-            return allVecAndSTM
+            return states, stms, stts, ts

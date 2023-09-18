@@ -52,12 +52,13 @@ yvals = []
 xvals = []
 integrator = STMint(preset="threeBody", preset_mult=1.0 / (81.30059 + 1.0))
 
-for i in range(100, 1000, 50):
-    r = z0 / (1100.0 - i)
+for i in range(1, 20):
+    # Change so r is linearly distributed
+    r = np.linalg.norm(x_0[3:]) / (100000) * (i * 50)
     xvals.append(r)
     n = 500
     yvals.append(calc_sphere_max_error(integrator, period/10.0, x_0, r, n))
-    print(str((i - 50) / 50) + " completed")
+    print(str(i) + " completed")
 
 plt.figure()
 plt.plot(xvals, yvals)
