@@ -51,14 +51,14 @@ def calc_sphere_max_error(integrator, transfer_time, x_0, r, n):
 yvals = []
 xvals = []
 integrator = STMint(preset="threeBody", preset_mult=1.0 / (81.30059 + 1.0))
+num_of_radii = 20
 
-for i in range(1, 20):
-    # Change so r is linearly distributed
-    r = np.linalg.norm(x_0[3:]) / (100000) * (i * 50)
+for i in range(0, num_of_radii):
+    r = np.linalg.norm(x_0[3:]) / 100000. * ((i+1) * 50.)
     xvals.append(r)
     n = 500
     yvals.append(calc_sphere_max_error(integrator, period/10.0, x_0, r, n))
-    print(str(i) + " completed")
+    print(str(i) + "/" + str(num_of_radii) + "completed")
 
 plt.figure()
 plt.plot(xvals, yvals)
