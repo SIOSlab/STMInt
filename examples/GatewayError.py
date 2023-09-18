@@ -58,7 +58,7 @@ for i in range(0, num_of_radii):
     xvals.append(r)
     n = 500
     yvals.append(calc_sphere_max_error(integrator, period/10.0, x_0, r, n))
-    print(str(i) + "/" + str(num_of_radii) + "completed")
+    print(str(i+1) + "/" + str(num_of_radii) + " completed")
 
 plt.figure()
 plt.plot(xvals, yvals)
