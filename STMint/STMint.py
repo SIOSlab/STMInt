@@ -114,10 +114,9 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "Earth" in preset:
-            V = (const.GM_earth)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
-            print(V)
-        if "Sun" in preset:
-            V = (const.GM_sun)/sqrt(x**2+y**2+z**2) << u.km**3 / u.s**2
+            V = const.GM_earth.to(u.km**3 / u.s**2).value / sqrt(x ** 2 + y ** 2 + z ** 2)
+        elif "Sun" in preset:
+            V = const.GM_sun.to(u.km**3 / u.s**2).value / sqrt(x ** 2 + y ** 2 + z ** 2)
         else:
             V = preset_mult/sqrt(x**2+y**2+z**2)
 
@@ -155,15 +154,15 @@ class STMint:
         x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
 
         if "SunEarth" in preset:
-            mu = const.M_earth/ (const.M_earth + const.M_sun)
+            mu = const.M_earth.value/ (const.M_earth + const.M_sun)
             mu = mu.value # mass fraction for Earth-Sun system  
-        if "EarthMoon" in preset:
-            mu = const.M_moon/ (const.M_earth + const.M_moon)
+        elif "EarthMoon" in preset:
+            mu = const.M_moon.value/ (const.M_earth + const.M_moon)
             mu = mu.value # mass fraction for Earth-Sun system  
-        if preset_mult != 1:
+        elif preset_mult != 1:
             mu = preset_mult
         else:
-            mu = const.M_earth/ (const.M_earth + const.M_sun)
+            mu = const.M_earth.value/ (const.M_earth.value + const.M_sun.value)
             mu = mu.value # mass fraction for Earth-Sun system  
 
         mu1 = 1. - mu
@@ -450,7 +449,7 @@ class STMint:
 
         if 'all' in output:
             states = []
-            STMs = []
+            stms = []
             l = len(self.vars)
             for i in range(len(solution.y[0])):
                 stm = []
@@ -463,10 +462,10 @@ class STMint:
                         stm.append(solution.y[j][i])
 
                 states.append(state)
-                STMs.append(np.reshape(stm, (l,l)))
+                stms.append(np.reshape(stm, (l,l)))
                 ts = solution.t
 
-            return np.array(states), STMs, ts
+            return np.array(states), stms, ts
             
     def dynVar_int2(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
                             dense_output=False, events=None, vectorized=False,
