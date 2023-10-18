@@ -43,7 +43,7 @@ def calc_sphere_max_error(integrator, transfer_time, x_0, r, n):
     normalized_samples = []
 
     for sample in samples:
-        normalized_samples.append((sample / np.linalg.norm(samples, ord=2)) * r)
+        normalized_samples.append((sample / np.linalg.norm(sample, ord=2)) * r)
 
     errors = []
 
