@@ -161,3 +161,9 @@ cython_debug/
 
 #Mac specific DS_Store
 .DS_Store
+
+# Build
+build/
+
+# Distribution / Egg files
+dist/
