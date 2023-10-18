@@ -1,2 +1,2 @@
-name=["STMint"]
-__version__ = '1.0'
+name = ["STMint"]
+__version__ = "1.0"

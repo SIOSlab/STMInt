@@ -4,8 +4,9 @@ from scipy.integrate import solve_ivp
 from astropy import constants as const
 from astropy import units as u
 
+
 class STMint:
-    """ State Transition Matrix Integrator
+    """State Transition Matrix Integrator
     A tool for numerical integration of variational
     equations associated with a symbolically specified dynamical system.
 
@@ -39,7 +40,9 @@ class STMint:
     # Invariant: lambda_dynamics_and_variational is a lambdified sympy expression
     # or None
 
-    def __init__(self, vars=None, dynamics=None, preset="", preset_mult=1, variational_order=1):
+    def __init__(
+        self, vars=None, dynamics=None, preset="", preset_mult=1, variational_order=1
+    ):
         """
         Args:
             vars (1-dimensional sympy matrix)
@@ -80,7 +83,7 @@ class STMint:
         else:
             # create sympy symbols
             for elem in vars:
-                elem=symbols(str(elem))
+                elem = symbols(str(elem))
 
             self.vars = Matrix(vars)
             self.dynamics = dynamics
@@ -92,7 +95,7 @@ class STMint:
         self.setVarEqs(variational_order)
 
     def presetTwoBody(self, preset, preset_mult):
-        """ This method instanciates STMint under the preset of two body dynamics
+        """This method instanciates STMint under the preset of two body dynamics
 
         This method calculates two body motion dynamics with the option for
         preset constant multiples.
@@ -111,25 +114,29 @@ class STMint:
                 Constant multiple of potential V for 2-body motion
         """
 
-        x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
+        x, y, z, vx, vy, vz = symbols("x,y,z,vx,vy,vz")
 
         if "Earth" in preset:
-            V = const.GM_earth.to(u.km**3 / u.s**2).value / sqrt(x ** 2 + y ** 2 + z ** 2)
+            V = const.GM_earth.to(u.km**3 / u.s**2).value / sqrt(
+                x**2 + y**2 + z**2
+            )
         elif "Sun" in preset:
-            V = const.GM_sun.to(u.km**3 / u.s**2).value / sqrt(x ** 2 + y ** 2 + z ** 2)
+            V = const.GM_sun.to(u.km**3 / u.s**2).value / sqrt(
+                x**2 + y**2 + z**2
+            )
         else:
-            V = preset_mult/sqrt(x**2+y**2+z**2)
+            V = preset_mult / sqrt(x**2 + y**2 + z**2)
 
-        r = Matrix([x,y,z])
-        vr = Matrix([vx,vy,vz])
-        dVdr = diff(V,r)
-        RHS = Matrix.vstack(vr,dVdr)
+        r = Matrix([x, y, z])
+        vr = Matrix([vx, vy, vz])
+        dVdr = diff(V, r)
+        RHS = Matrix.vstack(vr, dVdr)
 
-        self.vars = Matrix([x,y,z,vx,vy,vz])
+        self.vars = Matrix([x, y, z, vx, vy, vz])
         self.dynamics = RHS
 
     def presetThreeBody(self, preset, preset_mult):
-        """ This method instantiates STMint under the preset of three body
+        """This method instantiates STMint under the preset of three body
         restricted circular motion.
 
         This method calculates three body restricted circular motion dynamics
@@ -151,39 +158,48 @@ class STMint:
                 Mass parameter for two body motion (mu)
         """
 
-        x,y,z,vx,vy,vz=symbols("x,y,z,vx,vy,vz")
+        x, y, z, vx, vy, vz = symbols("x,y,z,vx,vy,vz")
 
         if "SunEarth" in preset:
-            mu = const.M_earth.value/ (const.M_earth + const.M_sun)
-            mu = mu.value # mass fraction for Earth-Sun system  
+            mu = const.M_earth.value / (const.M_earth + const.M_sun)
+            mu = mu.value  # mass fraction for Earth-Sun system
         elif "EarthMoon" in preset:
-            mu = const.M_moon.value/ (const.M_earth + const.M_moon)
-            mu = mu.value # mass fraction for Earth-Sun system  
+            mu = const.M_moon.value / (const.M_earth + const.M_moon)
+            mu = mu.value  # mass fraction for Earth-Sun system
         elif preset_mult != 1:
             mu = preset_mult
         else:
-            mu = const.M_earth.value/ (const.M_earth.value + const.M_sun.value)
-            mu = mu.value # mass fraction for Earth-Sun system  
+            mu = const.M_earth.value / (const.M_earth.value + const.M_sun.value)
+            mu = mu.value  # mass fraction for Earth-Sun system
 
-        mu1 = 1. - mu
+        mu1 = 1.0 - mu
         mu2 = mu
 
-        r1 = sqrt((x + mu2)**2 + (y**2) + (z**2))
-        r2 = sqrt((x - mu1)**2 + (y**2) + (z**2))
+        r1 = sqrt((x + mu2) ** 2 + (y**2) + (z**2))
+        r2 = sqrt((x - mu1) ** 2 + (y**2) + (z**2))
 
-        U = -1. * ( 1./2. * (x**2 + y**2 + mu1*mu2) + mu1/r1 + mu2/r2)
+        U = -1.0 * (1.0 / 2.0 * (x**2 + y**2 + mu1 * mu2) + mu1 / r1 + mu2 / r2)
 
-        dUdx = diff(U,x)
-        dUdy = diff(U,y)
-        dUdz = diff(U,z)
+        dUdx = diff(U, x)
+        dUdy = diff(U, y)
+        dUdz = diff(U, z)
 
-        RHS = Matrix([vx,vy,vz,((-1.*dUdx) + 2.*vy),((-1.*dUdy)- 2.*vx),(-1.*dUdz)])
+        RHS = Matrix(
+            [
+                vx,
+                vy,
+                vz,
+                ((-1.0 * dUdx) + 2.0 * vy),
+                ((-1.0 * dUdy) - 2.0 * vx),
+                (-1.0 * dUdz),
+            ]
+        )
 
-        self.vars = Matrix([x,y,z,vx,vy,vz])
+        self.vars = Matrix([x, y, z, vx, vy, vz])
         self.dynamics = RHS
 
     def setVarEqs(self, variational_order):
-        """ This method creates or deletes associated varitional equations with
+        """This method creates or deletes associated varitional equations with
         given dynmaics
 
         This method first takes the jacobian of the dynamics, and creates a
@@ -199,18 +215,22 @@ class STMint:
                 1 - for first order variational equations
                 2 - for first and second order variational equations
         """
-        if (variational_order == 1 or variational_order == 2):
+        if variational_order == 1 or variational_order == 2:
             self.jacobian = self.dynamics.jacobian(self.vars.transpose())
-            self.STM = MatrixSymbol("phi",len(self.vars),len(self.vars))
+            self.STM = MatrixSymbol("phi", len(self.vars), len(self.vars))
             self.variational = self.jacobian * self.STM
-            self.lambda_dynamics_and_variational = lambdify((self.vars,self.STM),
-                                        Matrix.vstack(self.dynamics.transpose(),
-                                        Matrix(self.variational)), "numpy")
-            if (variational_order == 2):
-                #contract the hessian to get rid of spurious dimensions from 
-                #using sympy matrices to calculate derivative
-                hessian = tensorcontraction(Array(self.dynamics).diff(
-                                        Array(self.vars), Array(self.vars)), (1,3,5))
+            self.lambda_dynamics_and_variational = lambdify(
+                (self.vars, self.STM),
+                Matrix.vstack(self.dynamics.transpose(), Matrix(self.variational)),
+                "numpy",
+            )
+            if variational_order == 2:
+                # contract the hessian to get rid of spurious dimensions from
+                # using sympy matrices to calculate derivative
+                hessian = tensorcontraction(
+                    Array(self.dynamics).diff(Array(self.vars), Array(self.vars)),
+                    (1, 3, 5),
+                )
                 lambda_hessian = lambdify(self.vars, hessian, "numpy")
 
                 self.jacobian = self.dynamics.jacobian(self.vars.transpose())
@@ -218,17 +238,22 @@ class STMint:
 
                 lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
                 n = len(self.vars)
-                self.lambda_dynamics_and_variational2 = lambda t, states: self.second_variational_equations(
-                lambda_dyn, lambda_jacobian, lambda_hessian, states, n)
-                            
+                self.lambda_dynamics_and_variational2 = (
+                    lambda t, states: self.second_variational_equations(
+                        lambda_dyn, lambda_jacobian, lambda_hessian, states, n
+                    )
+                )
+
         else:
             self.jacobian = None
             self.STM = None
             self.variational = None
             self.lambda_dynamics_and_variational = None
 
-    def second_variational_equations(self, lambda_dyn, lambda_jacobian, lambda_hessian, states, n):
-        """ This method creates the second order variational equations for given
+    def second_variational_equations(
+        self, lambda_dyn, lambda_jacobian, lambda_hessian, states, n
+    ):
+        """This method creates the second order variational equations for given
         dynamics
 
         This method begins by unpacking the initial state, state transition matrix
@@ -255,27 +280,29 @@ class STMint:
         Returns:
             Second order variational equations
         """
-        #unpack states into three components
+        # unpack states into three components
         state = states[:n]
-        stm = np.reshape(states[n:n*(n+1)], (n, n))
-        stt = np.reshape(states[n*(n+1):], (n, n, n))
+        stm = np.reshape(states[n : n * (n + 1)], (n, n))
+        stt = np.reshape(states[n * (n + 1) :], (n, n, n))
 
-        #time derivative of the various components of the augmented state vector
+        # time derivative of the various components of the augmented state vector
         jac = lambda_jacobian(*state)
         dt_state = lambda_dyn(*state)
         dt_stm = np.reshape(np.matmul(jac, stm), (n**2))
-        dt_stt = np.reshape(np.einsum('il,ljk->ijk', jac, stt) + np.einsum('lmi,lj,mk->ijk',
-                                                                           lambda_hessian(*state), stm, stm), (n**3))
+        dt_stt = np.reshape(
+            np.einsum("il,ljk->ijk", jac, stt)
+            + np.einsum("lmi,lj,mk->ijk", lambda_hessian(*state), stm, stm),
+            (n**3),
+        )
 
         return np.hstack((dt_state.flatten(), dt_stm, dt_stt))
 
-
-# ======================================================================================================================
-# IVP Solver Functions
-# ======================================================================================================================
+    # ======================================================================================================================
+    # IVP Solver Functions
+    # ======================================================================================================================
 
     def _dynamics_solver(self, t, y):
-        """ Function to mimic right hand side of a dynamic system for integration
+        """Function to mimic right hand side of a dynamic system for integration
 
         Method unpacks initial conditions y from solve_ivp and sends it to the
         predefined lambdified dynamics.
@@ -296,7 +323,7 @@ class STMint:
         return lambda_dynamics
 
     def _dynamics_and_variational_solver(self, t, y):
-        """ Function to mimic right hand side of a dynamic system with variational
+        """Function to mimic right hand side of a dynamic system with variational
             equations integration
 
         Method unpacks initial conditions y from solve_ivp and sends it to the
@@ -316,20 +343,29 @@ class STMint:
         """
 
         l = len(self.vars)
-        lambda_dynamics_and_variational = self.lambda_dynamics_and_variational(y[:l],
-                                    np.reshape(y[l:], (l,l))).flatten()
+        lambda_dynamics_and_variational = self.lambda_dynamics_and_variational(
+            y[:l], np.reshape(y[l:], (l, l))
+        ).flatten()
 
         return lambda_dynamics_and_variational
 
+    # ======================================================================================================================
+    # Clones of solve_ivp
+    # ======================================================================================================================
 
-# ======================================================================================================================
-# Clones of solve_ivp
-# ======================================================================================================================
-
-    def dyn_int(self, t_span, y0, method='DOP853', t_eval=None,
-                            dense_output=False, events=None, vectorized=False,
-                            args=None, **options):
-        """ Clone of solve_ivp
+    def dyn_int(
+        self,
+        t_span,
+        y0,
+        method="DOP853",
+        t_eval=None,
+        dense_output=False,
+        events=None,
+        vectorized=False,
+        args=None,
+        **options
+    ):
+        """Clone of solve_ivp
 
         Method uses _dynamics_solver to solve an initial value problem with given
         dynamics. This method has the same arguments and Scipy's solve_ivp function.
@@ -361,13 +397,33 @@ class STMint:
                     None if dense_output was set to False.
         """
 
-        return solve_ivp(self._dynamics_solver, t_span, y0, method, t_eval,
-                        dense_output, events, vectorized, args, **options)
+        return solve_ivp(
+            self._dynamics_solver,
+            t_span,
+            y0,
+            method,
+            t_eval,
+            dense_output,
+            events,
+            vectorized,
+            args,
+            **options
+        )
 
-    def dynVar_int(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
-                            dense_output=False, events=None, vectorized=False,
-                            args=None, **options):
-        """ Clone of solve_ivp
+    def dynVar_int(
+        self,
+        t_span,
+        y0,
+        output="raw",
+        method="DOP853",
+        t_eval=None,
+        dense_output=False,
+        events=None,
+        vectorized=False,
+        args=None,
+        **options
+    ):
+        """Clone of solve_ivp
 
         Method uses _dynamics_and_variational_solver to solve an initial value
         problem with given dynamics and variational equations. This method has
@@ -428,26 +484,35 @@ class STMint:
 
         """
         assert self.variational != None, "Variational equations have not been created"
-        initCon = np.vstack((np.array(y0),np.eye(len(self.vars))))
+        initCon = np.vstack((np.array(y0), np.eye(len(self.vars))))
 
-        solution = solve_ivp(self._dynamics_and_variational_solver, t_span,
-                            initCon.flatten(), method, t_eval, dense_output,
-                            events, vectorized, args, **options)
+        solution = solve_ivp(
+            self._dynamics_and_variational_solver,
+            t_span,
+            initCon.flatten(),
+            method,
+            t_eval,
+            dense_output,
+            events,
+            vectorized,
+            args,
+            **options
+        )
 
-        if 'raw' in output:
+        if "raw" in output:
             return solution
-        if 'final' in output:
+        if "final" in output:
             t_f = []
 
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
             state = np.array(t_f[:6])
-            stm= np.reshape(t_f[6:], (6,6))
+            stm = np.reshape(t_f[6:], (6, 6))
 
             return state, stm
 
-        if 'all' in output:
+        if "all" in output:
             states = []
             stms = []
             l = len(self.vars)
@@ -462,15 +527,25 @@ class STMint:
                         stm.append(solution.y[j][i])
 
                 states.append(state)
-                stms.append(np.reshape(stm, (l,l)))
+                stms.append(np.reshape(stm, (l, l)))
                 ts = solution.t
 
             return np.array(states), stms, ts
-            
-    def dynVar_int2(self, t_span, y0, output='raw', method='DOP853', t_eval=None,
-                            dense_output=False, events=None, vectorized=False,
-                            args=None, **options):
-        """ Clone of solve_ivp
+
+    def dynVar_int2(
+        self,
+        t_span,
+        y0,
+        output="raw",
+        method="DOP853",
+        t_eval=None,
+        dense_output=False,
+        events=None,
+        vectorized=False,
+        args=None,
+        **options
+    ):
+        """Clone of solve_ivp
 
         Method uses _dynamics_and_variational_solver to solve an initial value
         problem with given dynamics and variational equations. This method has
@@ -538,27 +613,42 @@ class STMint:
                     The time steps of integration
         """
         assert self.variational != None, "Variational equations have not been created"
-        init_con = np.hstack((np.array(y0), np.eye(len(self.vars)).flatten(), np.zeros(len(self.vars)**3)))
+        init_con = np.hstack(
+            (
+                np.array(y0),
+                np.eye(len(self.vars)).flatten(),
+                np.zeros(len(self.vars) ** 3),
+            )
+        )
 
-        solution = solve_ivp(self.lambda_dynamics_and_variational2, t_span,
-                            init_con, method, t_eval, dense_output,
-                            events, vectorized, args, **options)
+        solution = solve_ivp(
+            self.lambda_dynamics_and_variational2,
+            t_span,
+            init_con,
+            method,
+            t_eval,
+            dense_output,
+            events,
+            vectorized,
+            args,
+            **options
+        )
 
         l = len(self.vars)
-        if 'raw' in output:
+        if "raw" in output:
             return solution
-        if 'final' in output:
+        if "final" in output:
             t_f = []
 
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
 
             state = np.array(t_f[:l])
-            stm = np.reshape(t_f[l:l*(l+1)],(l, l))
-            stt = np.reshape(t_f[l*(l+1):], (l, l, l))
+            stm = np.reshape(t_f[l : l * (l + 1)], (l, l))
+            stt = np.reshape(t_f[l * (l + 1) :], (l, l, l))
 
             return state, stm, stt
-        if 'all' in output:
+        if "all" in output:
             states = []
             stms = []
             stts = []
@@ -571,14 +661,14 @@ class STMint:
                 for j in range(len(solution.y)):
                     if j < l:
                         state.append(solution.y[j][i])
-                    elif (j >= l) and (j < (l*(l+1))):
+                    elif (j >= l) and (j < (l * (l + 1))):
                         stm.append(solution.y[j][i])
                     else:
                         stt.append(solution.y[j][i])
 
                 states.append(state)
-                stms.append(np.reshape(stm, (l,l)))
-                stts.append(np.reshape(stt, (l,l,l)))
+                stms.append(np.reshape(stm, (l, l)))
+                stts.append(np.reshape(stt, (l, l, l)))
                 ts = solution.t
-            
+
             return states, stms, stts, ts
