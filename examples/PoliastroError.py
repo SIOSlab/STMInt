@@ -55,7 +55,7 @@ def normalize_sphere_samples(r, n):
     normalized_samples = []
 
     for sample in samples:
-        normalized_samples.append((sample / np.linalg.norm(samples, ord=2)) * r)
+        normalized_samples.append((sample / np.linalg.norm(sample, ord=2)) * r)
 
     return normalized_samples
 
@@ -91,17 +91,17 @@ for i in range(0, 20):
 
     # Sampling Method with different number of samples.
     s_0yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 50))
+        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 1000))
     )
     s_1yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 250))
+        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 2000))
     )
     s_2yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 750))
+        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 3000))
     )
     s_3yvals.append(
         calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 2250)
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 4000)
         )
     )
 
@@ -132,6 +132,7 @@ for i in range(0, 20):
 
 #   Change xvals' units to meters
 xvals_m = [x * 1000 for x in xvals]
+m_3yvals_m = [x * 1000 for x in m_3yvals]
 
 # Plotting each method in single graph
 fig, axs = plt.subplots(4, sharex=True)
@@ -143,7 +144,7 @@ axs[2].plot(xvals_m, m_2yvals)
 axs[2].set_title("Method 2")
 axs[3].plot(xvals_m, m_3yvals)
 axs[3].set_title("Method 3")
-axs[3].set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
+axs[3].set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
 fig.text(
     0.06,
     0.5,
@@ -157,9 +158,9 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals_m, m_3yvals)
-model3.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
-model3.set_ylabel("Maximum Error", fontsize=16)
+model3.plot(xvals_m, m_3yvals_m)
+model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
+model3.set_ylabel("Maximum Error (m)", fontsize=16)
 
 # Plotting error between methods (1 and 2 with resepct to 3)
 error1_3 = []
@@ -171,7 +172,7 @@ for i in range(len(xvals_m)):
 fig3, error = plt.subplots(figsize=(7, 4.8))
 error.plot(xvals_m, error1_3, label="Methods 1 and 3")
 error.plot(xvals_m, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
+error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
 error.set_ylabel("Method Percentage Error", fontsize=16)
 error.legend()
 
@@ -188,11 +189,11 @@ for i in range(len(s_0yvals)):
 
 
 fig4, s_error = plt.subplots(figsize=(7, 4.8))
-s_error.plot(xvals_m, s_error0_3, label="50 Samples")
-s_error.plot(xvals_m, s_error1_3, label="500 Samples")
-s_error.plot(xvals_m, s_error2_3, label="1000 Samples")
-s_error.plot(xvals_m, s_error3_3, label="2500 Samples")
-s_error.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
+s_error.plot(xvals_m, s_error0_3, label="1000 Samples")
+s_error.plot(xvals_m, s_error1_3, label="2000 Samples")
+s_error.plot(xvals_m, s_error2_3, label="3000 Samples")
+s_error.plot(xvals_m, s_error3_3, label="4000 Samples")
+s_error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
 s_error.set_ylabel("Method Percentage Error", fontsize=16)
 s_error.legend()
 

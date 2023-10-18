@@ -169,7 +169,7 @@ class STMint:
         elif preset_mult != 1:
             mu = preset_mult
         else:
-            mu = const.M_earth.value / (const.M_earth.value + const.M_sun.value)
+            mu = const.M_earth.value / (const.M_earth + const.M_sun)
             mu = mu.value  # mass fraction for Earth-Sun system
 
         mu1 = 1.0 - mu
