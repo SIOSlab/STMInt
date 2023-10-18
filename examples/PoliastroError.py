@@ -83,7 +83,7 @@ integrator = STMint(preset="twoBodyEarth", variational_order=2)
 stm = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
 stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
 
-for i in range(0, 2):
+for i in range(0, 20):
     # Change so r is linearly distributed
     r = np.linalg.norm(x_0[3:]) / (100000) * ((i + 1) * 50)
     xvals.append(r)
@@ -130,18 +130,20 @@ for i in range(0, 2):
 
     m_3yvals.append(err(min.x))
 
+#   Change xvals' units to meters
+xvals_m = [x * 1000 for x in xvals]
 
 # Plotting each method in single graph
 fig, axs = plt.subplots(4, sharex=True)
-axs[1].plot(xvals, s_0yvals)
+axs[1].plot(xvals_m, s_0yvals)
 axs[1].set_title("Method 0")
-axs[0].plot(xvals, m_1yvals)
+axs[0].plot(xvals_m, m_1yvals)
 axs[0].set_title("Method 1")
-axs[2].plot(xvals, m_2yvals)
+axs[2].plot(xvals_m, m_2yvals)
 axs[2].set_title("Method 2")
-axs[3].plot(xvals, m_3yvals)
+axs[3].plot(xvals_m, m_3yvals)
 axs[3].set_title("Method 3")
-axs[0].set_xlabel("Radius of Sphere of Perturbation", fontsize=16)
+axs[3].set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
 fig.text(
     0.06,
     0.5,
@@ -155,21 +157,21 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals, m_3yvals)
-model3.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
+model3.plot(xvals_m, m_3yvals)
+model3.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
 model3.set_ylabel("Maximum Error", fontsize=16)
 
 # Plotting error between methods (1 and 2 with resepct to 3)
 error1_3 = []
 error2_3 = []
-for i in range(len(xvals)):
+for i in range(len(xvals_m)):
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
 fig3, error = plt.subplots(figsize=(7, 4.8))
-error.plot(xvals, error1_3, label="Methods 1 and 3")
-error.plot(xvals, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
+error.plot(xvals_m, error1_3, label="Methods 1 and 3")
+error.plot(xvals_m, error2_3, label="Methods 2 and 3")
+error.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
 error.set_ylabel("Method Percentage Error", fontsize=16)
 error.legend()
 
@@ -186,11 +188,11 @@ for i in range(len(s_0yvals)):
 
 
 fig4, s_error = plt.subplots(figsize=(7, 4.8))
-s_error.plot(xvals, s_error0_3, label="50 Samples")
-s_error.plot(xvals, s_error1_3, label="500 Samples")
-s_error.plot(xvals, s_error2_3, label="1000 Samples")
-s_error.plot(xvals, s_error3_3, label="2500 Samples")
-s_error.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
+s_error.plot(xvals_m, s_error0_3, label="50 Samples")
+s_error.plot(xvals_m, s_error1_3, label="500 Samples")
+s_error.plot(xvals_m, s_error2_3, label="1000 Samples")
+s_error.plot(xvals_m, s_error3_3, label="2500 Samples")
+s_error.set_xlabel("Radius of Sphere of Perturbation (m)", fontsize=16)
 s_error.set_ylabel("Method Percentage Error", fontsize=16)
 s_error.legend()
 
