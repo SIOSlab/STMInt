@@ -65,9 +65,13 @@ for i in range(0, num_of_radii):
     yvals.append(calc_sphere_max_error(integrator, period / 10.0, x_0, r, n))
     print(str(i + 1) + "/" + str(num_of_radii) + " completed")
 
+# Changing units to meters
+xvals_m = [x * 1000 for x in xvals]
+yvals_m = [x * 1000 for x in yvals]
+
 plt.figure()
-plt.plot(xvals, yvals)
+plt.plot(xvals_m, yvals_m)
 plt.title("Error in Orbit Propagation vs Difference in Initial Perturbation")
-plt.xlabel("Radius of Sphere of Perturbation")
-plt.ylabel("Maximum Error")
+plt.xlabel("Radius of Sphere of Perturbation (m/s)")
+plt.ylabel("Maximum Error (m)")
 plt.show()
