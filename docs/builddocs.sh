@@ -3,7 +3,7 @@
 # must be run directly from documentation directory
 
 if [ ! -d "../STMint" ] || [ `basename $PWD` != "docs" ] ; then
-    echo "This script must be run from the docs directory in the grading parent directory."
+    echo "This script must be run from the docs directory in the STMint parent directory."
     exit 1
 fi
 
