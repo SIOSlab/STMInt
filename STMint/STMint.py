@@ -10,76 +10,90 @@ class STMint:
     A tool for numerical integration of variational
     equations associated with a symbolically specified dynamical system.
 
-    * Attributes only exist if the user chooses to create variational equations
-    with given dynmaics
-    """
+    Constructor Parameters:
+        vars (1-dimensional sympy matrix):
+            The variables used in the symbolic integration.
+        dynamics (sympy expression(s)):
+            The dynamics to be symbolically integrated.
+        preset (string):
+            Dynamic and Variational equation preset. Current presets are:
+                "twoBody":
+                    Two body motion.
+                "twoBodyEarth":
+                    Two body motion around Earth.
+                "twoBodySun":
+                    Two body motion around the Sun.
+                "threeBody":
+                    Three body motion.
+                "threeBodySunEarth":
+                    Three body motion around the Sun and Earth.
+                "threeBodyEarthMoon":
+                    Three body motion around the Earth and Moon.
+        preset_mult (float):
+            Constant multiple of potential V for 2-body motion.
+            Note: Only needed if preset = "".
+        variational_order (int):
+            Order of variational equations to be computed:
+                * 0 - for no variational equations.
+                * 1 - for first order variational equations.
+                * 2 - for first and second order variational equations.
 
-    # ATTRIBUTES
-    # Attribute vars: the variables used in the symbolic integration
-    # Invariant: vars is a 1-dimensional Sympy Matrix
-    #
-    # Attribute dynamics: the dynamics to be symbolically integrated
-    # Invariant: dynamics is the dynamic equation(s) in the form
-    # of sympy expressions
-    #
-    # Attribute lambda_dynamics: the lambdified dynamic equations
-    # Invariant: lambda_dynamics is a lambdified sympy expression
-    #
-    # *Attribute jacobian: the jacobian of the dynamics
-    # Invariant: jacobian is an n-dimensional sympy Matrix or None
-    #
-    # *Attribute STM: the symbolic state transition matrix
-    # Invariant: STM is an nxn sympy Matrix, the dimensions of STM is equal to
-    # number of variables used or None
-    #
-    # *Attribute variational_order: the order of variatonal equations used for the dynamical system
-    # Invariant: variational_order is and int, namely: 0, 1, or 2
-    #
-    # *Attribute lambda_dynamics_and_variational: the lambdified dynamic and
-    # variational equations
-    # Invariant: lambda_dynamics_and_variational is a lambdified sympy expression
-    # or None
+    Attributes:
+        vars (1-d sympy matrix):
+            The variables used in the symbolic integration.
+        dynamics (sympy expression):
+            The dynamics to be symbolically integrated.
+        variational_order (int):
+            Order of variational equations to be computed:
+                    * 0 - for no variational equations
+                    * 1 - for first order variational equations
+                    * 2 - for first and second order variational equations
+        lambda_dynamics (lambdafied sympy expression):
+            The lambdified dynamic equations.
+        lambda_dynamics_and_variational:
+            The lambdified dynamic and variational equations.
+        jacobian (nd sympy matrix or None)
+            The jacobian of the dynamics.
+        STM (nxn sympy matrix)
+            The symbolic state transition matrix
+    """
 
     def __init__(
         self, vars=None, dynamics=None, preset="", preset_mult=1, variational_order=1
     ):
         """
         Args:
-            vars (1-dimensional sympy matrix)
+            vars (1-dimensional sympy matrix):
                 The variables used in the symbolic integration.
-
-            dynamics (sympy expression(s))
-                The dynamics to be symbolically integrated
-
-            preset (string)
+            dynamics (sympy expression(s)):
+                The dynamics to be symbolically integrated.
+            preset (string):
                 Dynamic and Variational equation preset. Current presets are:
-                    twoBody
-                        Two body motion
-                    twoBodyEarth
-                        Two body motion around Earth
-                    twoBodySun
-                        Two body motion around the Sun
-                    threeBody
-                        Three body motion
-                    threeBodySunEarth
-                        Three body motion around the Sun and Earth
-                    threeBodyEarthMoon
-                        Three body motion around the Earth and Moon
-
-            preset_mult (float)
-                Constant multiple of potential V for 2-body motion
-
-            variational_order (int)
-                Order of variational equations to be computed
-                0 - for no variational equations
-                1 - for first order variational equations
-                2 - for first and second order variational equations
+                    twoBody:
+                        Two body motion.
+                    twoBodyEarth:
+                        Two body motion around Earth.
+                    twoBodySun:
+                        Two body motion around the Sun.
+                    threeBody:
+                        Three body motion.
+                    threeBodySunEarth:
+                        Three body motion around the Sun and Earth.
+                    threeBodyEarthMoon:
+                        Three body motion around the Earth and Moon.
+            preset_mult (float):
+                Constant multiple of potential V for 2-body motion.
+            variational_order (int):
+                Order of variational equations to be computed:
+                    0 - for no variational equations.
+                    1 - for first order variational equations.
+                    2 - for first and second order variational equations.
         """
         # preset for two body motion
         if "twoBody" in preset:
-            self.presetTwoBody(preset, preset_mult)
+            self._presetTwoBody(preset, preset_mult)
         elif "threeBody" in preset:
-            self.presetThreeBody(preset, preset_mult)
+            self._presetThreeBody(preset, preset_mult)
         else:
             # create sympy symbols
             for elem in vars:
@@ -92,26 +106,25 @@ class STMint:
         self.lambda_dynamics = lambdify(self.vars, self.dynamics, "numpy")
 
         # if user wants to use variational equations
-        self.setVarEqs(variational_order)
+        self._setVarEqs(variational_order)
 
-    def presetTwoBody(self, preset, preset_mult):
+    def _presetTwoBody(self, preset, preset_mult):
         """This method instanciates STMint under the preset of two body dynamics
 
         This method calculates two body motion dynamics with the option for
         preset constant multiples.
 
         Args:
-            preset (string)
+            preset (string):
                 Dynamic and Variational equation preset. Current presets are:
-                    twoBody
-                        Two body motion
-                    twoBodyEarth
-                        Two body motion around Earth
-                    twoBodySun
-                        Two body motion around the Sun
-
-            preset_mult (float)
-                Constant multiple of potential V for 2-body motion
+                    twoBody:
+                        Two body motion.
+                    twoBodyEarth:
+                        Two body motion around Earth.
+                    twoBodySun:
+                        Two body motion around the Sun.
+            preset_mult (float):
+                Constant multiple of potential V for 2-body motion.
         """
 
         x, y, z, vx, vy, vz = symbols("x,y,z,vx,vy,vz")
@@ -135,7 +148,7 @@ class STMint:
         self.vars = Matrix([x, y, z, vx, vy, vz])
         self.dynamics = RHS
 
-    def presetThreeBody(self, preset, preset_mult):
+    def _presetThreeBody(self, preset, preset_mult):
         """This method instantiates STMint under the preset of three body
         restricted circular motion.
 
@@ -143,19 +156,18 @@ class STMint:
         with the option for a preset mass parameter.
 
         Args:
-            preset (string)
+            preset (string):
                 Dynamic and Variational equation preset. Current presets for
                 three body motion are:
-                    threeBody
-                        Three body motion
-                        (Default to SunEarth)
-                    threeBodySunEarth
-                        Three body motion around the Sun and Earth
-                    threeBodyEarthMoon
-                        Three body motion around the Earth and Moon
+                    threeBody:
+                        Three body motion (Default to SunEarth).
+                    threeBodySunEarth:
+                        Three body motion around the Sun and Earth.
+                    threeBodyEarthMoon:
+                        Three body motion around the Earth and Moon.
 
-            preset_mult (float)
-                Mass parameter for two body motion (mu)
+            preset_mult (float):
+                Mass parameter for two body motion (mu).
         """
 
         x, y, z, vx, vy, vz = symbols("x,y,z,vx,vy,vz")
@@ -198,7 +210,7 @@ class STMint:
         self.vars = Matrix([x, y, z, vx, vy, vz])
         self.dynamics = RHS
 
-    def setVarEqs(self, variational_order):
+    def _setVarEqs(self, variational_order):
         """This method creates or deletes associated varitional equations with
         given dynmaics
 
@@ -209,11 +221,11 @@ class STMint:
         are set to none.
 
         Args:
-            variational_order (int)
-                Order of variational equations to be computed
-                0 - for no variational equations
-                1 - for first order variational equations
-                2 - for first and second order variational equations
+            variational_order (int):
+                Order of variational equations to be computed:
+                    0 - for no variational equations.
+                    1 - for first order variational equations.
+                    2 - for first and second order variational equations.
         """
         if variational_order == 1 or variational_order == 2:
             self.jacobian = self.dynamics.jacobian(self.vars.transpose())
@@ -225,7 +237,7 @@ class STMint:
                 "numpy",
             )
             if variational_order == 2:
-                # contract the hessian to get rid of spurious dimensions from
+                # contract the hessian to get rid of spurious dimensions
                 # using sympy matrices to calculate derivative
                 hessian = tensorcontraction(
                     Array(self.dynamics).diff(Array(self.vars), Array(self.vars)),
@@ -239,7 +251,7 @@ class STMint:
                 lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
                 n = len(self.vars)
                 self.lambda_dynamics_and_variational2 = (
-                    lambda t, states: self.second_variational_equations(
+                    lambda t, states: self.secondVariationalEquations(
                         lambda_dyn, lambda_jacobian, lambda_hessian, states, n
                     )
                 )
@@ -250,7 +262,7 @@ class STMint:
             self.variational = None
             self.lambda_dynamics_and_variational = None
 
-    def second_variational_equations(
+    def secondVariationalEquations(
         self, lambda_dyn, lambda_jacobian, lambda_hessian, states, n
     ):
         """This method creates the second order variational equations for given
@@ -262,20 +274,16 @@ class STMint:
         are all returned in a single matrix.
 
         Agrs:
-            lambda_dyn (Lambdafied function)
-                Lambdafied dynamics
-
-            lambda_jacobian (Lambdafied function)
-                Lambdafied jacobian of the dynamics
-
-            lambda_hessian (Lambdafied function)
-                Lambdafied hessian
-
-            states (np array)
-                Initial state of dynamics
-
-            n (int)
-                Dimension of variables
+            lambda_dyn (Lambdafied function):
+                Lambdafied dynamics.
+            lambda_jacobian (Lambdafied function):
+                Lambdafied jacobian of the dynamics.
+            lambda_hessian (Lambdafied function):
+                Lambdafied hessian.
+            states (np array):
+                Initial state of dynamics.
+            n (int):
+                Dimension of variables.
 
         Returns:
             Second order variational equations
@@ -301,28 +309,27 @@ class STMint:
     # IVP Solver Functions
     # ======================================================================================================================
 
-    def _dynamics_solver(self, t, y):
+    def _dynamicsSolver(self, t, y):
         """Function to mimic right hand side of a dynamic system for integration
 
         Method unpacks initial conditions y from solve_ivp and sends it to the
         predefined lambdified dynamics.
 
         Args:
-            t (float)
-                Independent variable of initial conditions
-
-            y (float n array)
-                Array of initial conditions of solve_ivp
+            t (float):
+                Independent variable of initial conditions.
+            y (float n array):
+                Array of initial conditions of scipy.solve_ivp.
 
         Returns:
-            lambda_dynamics (float n array)
+            lambda_dynamics (float n array):
                 Array of values of dynamics subjected to initial conditions
         """
         lambda_dynamics = self.lambda_dynamics(*y).flatten()
 
         return lambda_dynamics
 
-    def _dynamics_and_variational_solver(self, t, y):
+    def _dynamicsVariationalSolver(self, t, y):
         """Function to mimic right hand side of a dynamic system with variational
             equations integration
 
@@ -330,16 +337,15 @@ class STMint:
         predefined lambdified dynamics and variational equations.
 
         Args:
-            t (float)
-                Independent variable of initial conditions
-
-            y (float n array)
-                Array of initial conditions of solve_ivp
+            t (float):
+                Independent variable of initial conditions.
+            y (float n array):
+                Array of initial conditions of scipy.solve_ivp.
 
         Returns:
-            lambda_dynamics_and_variational (float n array)
+            lambda_dynamics_and_variational (float n array):
                 Array of values of dynamics and variational equations subjected
-                to initial conditions
+                to initial conditions.
         """
 
         l = len(self.vars)
@@ -365,9 +371,9 @@ class STMint:
         args=None,
         **options
     ):
-        """Clone of solve_ivp
+        """Clone of scipy.solve_ivp
 
-        Method uses _dynamics_solver to solve an initial value problem with given
+        Method uses _dynamicsSolver to solve an initial value problem with given
         dynamics. This method has the same arguments and Scipy's solve_ivp function.
 
         Non-optional arguments are listed below.
@@ -376,29 +382,26 @@ class STMint:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 
         Args:
-            t_span (2-tuple of floats)
+            t_span (2-tuple of floats):
                 Interval of integration (t0, tf). The solver starts with t=t0
                 and integrates until it reaches t=tf.
-
-            y0 (array_like, shape (n,))
+            y0 (array_like, shape (n,)):
                 Initial state. For problems in the complex domain, pass y0 with
                 a complex data type (even if the initial value is purely real).
 
         Returns:
-            Bunch object with multiple defined fields, such as:
-                t (ndarray, shape (n_points,))
+            Bunch object with multiple defined fields:
+                t (ndarray, shape (n_points,)):
                     Time points.
-
-                y (ndarray, shape (n, n_points))
+                y (ndarray, shape (n, n_points)):
                     Values of the solution at t.
-
-                sol (OdeSolution or None)
+                sol (OdeSolution or None):
                     Found solution as OdeSolution instance;
                     None if dense_output was set to False.
         """
 
         return solve_ivp(
-            self._dynamics_solver,
+            self._dynamicsSolver,
             t_span,
             y0,
             method,
@@ -423,9 +426,9 @@ class STMint:
         args=None,
         **options
     ):
-        """Clone of solve_ivp
+        """Clone of scipy.solve_ivp
 
-        Method uses _dynamics_and_variational_solver to solve an initial value
+        Method uses _dynamicsVariationalSolver to solve an initial value
         problem with given dynamics and variational equations. This method has
         the same arguments and Scipy's solve_ivp function.
 
@@ -435,59 +438,51 @@ class STMint:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 
         Args:
-            t_span (2-tuple of floats)
+            t_span (2-tuple of floats):
                 Interval of integration (t0, tf). The solver starts with t=t0
                 and integrates until it reaches t=tf.
-
-            y0 (array_like, shape (n,))
+            y0 (array_like, shape (n,)):
                 Initial state. For problems in the complex domain, pass y0 with
                 a complex data type (even if the initial value is purely real).
-
-            output (str)
+            output (str):
                 Output of dynVar_int, options include:
-                    raw
-                        Raw bunch object from solve_ivp
-                    final
-                        The state vector and STM at the final time only
-                    all
-                        The state vector and STM at all times
+                    * raw:
+                        Raw bunch object from scipy.solve_ivp.
+                    * final:
+                        The state vector and STM at the final time only.
+                    * all:
+                        The state vector and STM at all times.
 
         Returns:
-            If output is 'raw'
-                Bunch object with multiple defined fields, such as:
-                    t (ndarray, shape (n_points,))
+            varies:
+            If output is 'raw':
+                * Bunch object with multiple defined fields, such as:
+                    t (ndarray, shape (n_points,)):
                         Time points.
-
-                    y (ndarray, shape (n, n_points))
+                    y (ndarray, shape (n, n_points)):
                         Values of the solution at t.
-
-                    sol (OdeSolution or None)
+                    sol (OdeSolution or None):
                         Found solution as OdeSolution instance;
                         None if dense_output was set to False.
-
-            If output is 'final'
-                state (n-array)
-                    The state vector
-
-                stm (ndarray)
-                    The state transition matrix
-
-            If output is 'all'
-                states (n-array)
-                    The state vectors
-
-                stms (ndarray)
-                    The state transition matricies
-
-                ts (n-array)
-                    The time steps of integration
+            If output is 'final':
+                state (n-array):
+                    The state vector.
+                stm (ndarray):
+                    The state transition matrix.
+            If output is 'all':
+                states (n-array):
+                    The state vectors.
+                stms (ndarray):
+                    The state transition matricies.
+                ts (n-array):
+                    The time steps of integration.
 
         """
         assert self.variational != None, "Variational equations have not been created"
         initCon = np.vstack((np.array(y0), np.eye(len(self.vars))))
 
         solution = solve_ivp(
-            self._dynamics_and_variational_solver,
+            self._dynamicsVariationalSolver,
             t_span,
             initCon.flatten(),
             method,
@@ -545,9 +540,9 @@ class STMint:
         args=None,
         **options
     ):
-        """Clone of solve_ivp
+        """Clone of scipy.solve_ivp
 
-        Method uses _dynamics_and_variational_solver to solve an initial value
+        Method uses _dynamicsVariationalSolver to solve an initial value
         problem with given dynamics and variational equations. This method has
         the same arguments and Scipy's solve_ivp function. Note that this method
         also integrates second order variational equations to obtain a second
@@ -559,58 +554,48 @@ class STMint:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 
         Args:
-            t_span (2-tuple of floats)
+            t_span (2-tuple of floats):
                 Interval of integration (t0, tf). The solver starts with t=t0
                 and integrates until it reaches t=tf.
-
-            y0 (array_like, shape (n,))
+            y0 (array_like, shape (n,)):
                 Initial state. For problems in the complex domain, pass y0 with
                 a complex data type (even if the initial value is purely real).
-
-            output (str)
+            output (str):
                 Output of dynVar_int, options include:
-                    raw
-                        Raw bunch object from solve_ivp
-                    final
-                        The state vector, STM, and STT at the final time only
-                    all
-                        The state vector, STM, and STT at all times
+                    raw:
+                        Raw bunch object from solve_ivp.
+                    final:
+                        The state vector, STM, and STT at the final time only.
+                    all:
+                        The state vector, STM, and STT at all times.
 
         Returns:
-            If output is 'raw'
+            varies:
+            If output is 'raw':
                 Bunch object with multiple defined fields, such as:
-                    t (ndarray, shape (n_points,))
+                    t (ndarray, shape (n_points,)):
                         Time points.
-
-                    y (ndarray, shape (n, n_points))
+                    y (ndarray, shape (n, n_points)):
                         Values of the solution at t.
-
-                    sol (OdeSolution or None)
+                    sol (OdeSolution or None):
                         Found solution as OdeSolution instance;
                         None if dense_output was set to False.
-
-            If output is 'final'
-                state (n-array)
-                    The state vector
-
-                stm (ndarray)
-                    The state transition matrix
-
-                stt (ndarray)
-                    The state transition tensor
-
-            If output is 'all'
-                states (n-array)
-                    The state vectors
-
-                stms (ndarray)
-                    The state transition matricies
-
-                stts (ndarray)
-                    The state transition tensors
-
-                ts (n-array)
-                    The time steps of integration
+            If output is 'final':
+                state (n-array):
+                    The state vector.
+                stm (ndarray):
+                    The state transition matrix.
+                stt (ndarray):
+                    The state transition tensor.
+            If output is 'all':
+                states (n-array):
+                    The state vectors.
+                stms (ndarray):
+                    The state transition matricies.
+                stts (ndarray):
+                    The state transition tensors.
+                ts (n-array):
+                    The time steps of integration.
         """
         assert self.variational != None, "Variational equations have not been created"
         init_con = np.hstack(

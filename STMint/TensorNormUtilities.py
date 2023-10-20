@@ -19,7 +19,6 @@ def nonlin_index_inf_2(stm, stt):
      Args:
          stm (np array)
              State transition matrix
-
          stt (np array)
              Second order state transition tensor
 
