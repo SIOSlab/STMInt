@@ -23,7 +23,7 @@ copyright = "2023, Jackson Kulik, Cedric Orton-Urbina"
 author = "Jackson Kulik, Cedric Orton-Urbina"
 release = "1.2"
 
-with open(os.path.join("..", "STMint", "__init__.py"), "r") as f:
+with open(os.path.join("../..", "STMint", "__init__.py"), "r") as f:
     version_file = f.read()
 
 version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
