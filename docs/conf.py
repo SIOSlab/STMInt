@@ -13,7 +13,7 @@ import os
 import sys
 import re
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath(""))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -23,7 +23,7 @@ copyright = "2023, Jackson Kulik, Cedric Orton-Urbina"
 author = "Jackson Kulik, Cedric Orton-Urbina"
 release = "1.2"
 
-with open(os.path.join("..", "..", "STMint", "__init__.py"), "r") as f:
+with open(os.path.join("..", "STMint", "__init__.py"), "r") as f:
     version_file = f.read()
 
 version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
@@ -48,7 +48,7 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = []
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
