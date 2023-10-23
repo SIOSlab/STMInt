@@ -359,8 +359,8 @@ def stt_2_norm(stm, stt):
     Returns:
         sttArgMax (np array)
             Input unit vector that maximizes the STT
-        sttNorm (float)
-            Norm of the STT
+        sqrt(sttNorm) (float)
+            Square root of the norm of the STT
     """
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]

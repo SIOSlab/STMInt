@@ -50,11 +50,11 @@ class STMint:
                     * 2 - for first and second order variational equations
         lambda_dynamics (lambdafied sympy expression):
             The lambdified dynamic equations.
-        lambda_dynamics_and_variational:
+        lambda_dynamics_and_variational (lambdafied sympy expression):
             The lambdified dynamic and variational equations.
-        jacobian (nd sympy matrix or None)
+        jacobian (nd sympy matrix or None):
             The jacobian of the dynamics.
-        STM (nxn sympy matrix)
+        STM (nxn sympy matrix):
             The symbolic state transition matrix
     """
 
@@ -69,17 +69,17 @@ class STMint:
                 The dynamics to be symbolically integrated.
             preset (string):
                 Dynamic and Variational equation preset. Current presets are:
-                    twoBody:
+                    "twoBody":
                         Two body motion.
-                    twoBodyEarth:
+                    "twoBodyEarth":
                         Two body motion around Earth.
-                    twoBodySun:
+                    "twoBodySun":
                         Two body motion around the Sun.
-                    threeBody:
+                    "threeBody":
                         Three body motion.
-                    threeBodySunEarth:
+                    "threeBodySunEarth":
                         Three body motion around the Sun and Earth.
-                    threeBodyEarthMoon:
+                    "threeBodyEarthMoon":
                         Three body motion around the Earth and Moon.
             preset_mult (float):
                 Constant multiple of potential V for 2-body motion.
@@ -117,11 +117,11 @@ class STMint:
         Args:
             preset (string):
                 Dynamic and Variational equation preset. Current presets are:
-                    twoBody:
+                    "twoBody":
                         Two body motion.
-                    twoBodyEarth:
+                    "twoBodyEarth":
                         Two body motion around Earth.
-                    twoBodySun:
+                    "twoBodySun":
                         Two body motion around the Sun.
             preset_mult (float):
                 Constant multiple of potential V for 2-body motion.
@@ -159,11 +159,11 @@ class STMint:
             preset (string):
                 Dynamic and Variational equation preset. Current presets for
                 three body motion are:
-                    threeBody:
+                    "threeBody":
                         Three body motion (Default to SunEarth).
-                    threeBodySunEarth:
+                    "threeBodySunEarth":
                         Three body motion around the Sun and Earth.
-                    threeBodyEarthMoon:
+                    "threeBodyEarthMoon":
                         Three body motion around the Earth and Moon.
 
             preset_mult (float):
@@ -446,11 +446,11 @@ class STMint:
                 a complex data type (even if the initial value is purely real).
             output (str):
                 Output of dynVar_int, options include:
-                    * raw:
+                    * "raw":
                         Raw bunch object from scipy.solve_ivp.
-                    * final:
+                    * "final":
                         The state vector and STM at the final time only.
-                    * all:
+                    * "all":
                         The state vector and STM at all times.
 
         Returns:
@@ -562,11 +562,11 @@ class STMint:
                 a complex data type (even if the initial value is purely real).
             output (str):
                 Output of dynVar_int, options include:
-                    raw:
+                    "raw":
                         Raw bunch object from solve_ivp.
-                    final:
+                    "final":
                         The state vector, STM, and STT at the final time only.
-                    all:
+                    "all":
                         The state vector, STM, and STT at all times.
 
         Returns:

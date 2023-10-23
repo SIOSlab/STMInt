@@ -6,7 +6,6 @@ from STMint import TensorNormUtilities as tnu
 from poliastro.twobody.orbit import Orbit
 import poliastro.bodies as body
 import matplotlib.pyplot as plt
-import matplotlib
 from scipy.optimize import least_squares
 
 # ======================================================================================================================
@@ -91,13 +90,19 @@ for i in range(0, 20):
 
     # Sampling Method with different number of samples.
     s_0yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 1000))
+        calc_sphere_max_error(
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 1000)
+        )
     )
     s_1yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 2000))
+        calc_sphere_max_error(
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 2000)
+        )
     )
     s_2yvals.append(
-        calc_sphere_max_error(stm, transfer_time, x_0, normalize_sphere_samples(r, 3000))
+        calc_sphere_max_error(
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 3000)
+        )
     )
     s_3yvals.append(
         calc_sphere_max_error(
