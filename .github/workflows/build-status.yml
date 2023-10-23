@@ -26,4 +26,4 @@ jobs:
         pip install -r test_requirements.txt
         pip install -e . -v
     - name: Run tests
-      run: unittest discover -v
+      run: python -m unittest discover -v
