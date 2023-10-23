@@ -2,7 +2,7 @@ import unittest
 from sympy import *
 import numpy as np
 from STMint.STMint import STMint
-from util import skew, findSTM
+from tests.util import skew, findSTM
 import math
 from STMint import TensorNormUtilities as tnu
 
