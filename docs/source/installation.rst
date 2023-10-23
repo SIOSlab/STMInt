@@ -16,7 +16,7 @@ To install system-wide, omit the ``--user`` option. This requires administrative
 From GitHub
 ^^^^^^^^^^^^^^^^^
 
-If cloning from github, in the cloned grading directory: ::
+If cloning from github, in the cloned STMint directory: ::
 
 
     pip install --user .

@@ -3,5 +3,3 @@ scipy
 astropy
 sympy
 poliastro
-itertools
-functools
