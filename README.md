@@ -13,7 +13,7 @@ To install from PyPI:
 To install system-wide, omit the ``--user`` option. This requires administrative privileges on most systems.
 
 ---
-If cloning from github, in the cloned grading directory:
+If cloning from github, in the cloned STMint directory:
 
 ```
     pip install --user .
