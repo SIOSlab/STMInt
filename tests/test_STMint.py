@@ -7,6 +7,10 @@ import math
 from STMint import TensorNormUtilities as tnu
 
 
+class badTest(unittest.TestCase):
+    raise Exception("BadTest")
+
+
 class TestTwoBodyMotion(unittest.TestCase):
     def setUp(self):
         x, y, z, vx, vy, vz = symbols("x,y,z,vx,vy,vz")

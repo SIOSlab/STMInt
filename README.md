@@ -28,7 +28,7 @@ or, to install in developer mode:
 ---
 **NOTE**
 
-    To upgrade to the latest version, just append ``--upgrade`` to whichever install command you originally used.  For example: ``pip install --upgrade --user STMint``.
+To upgrade to the latest version, just append ``--upgrade`` to whichever install command you originally used.  For example: ``pip install --upgrade --user STMint``.
 
 STMint Documentation
 ====================
