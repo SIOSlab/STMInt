@@ -3,16 +3,6 @@
 Installation
 ---------------------------
 
-From PyPI (recommended)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To install from PyPI: ::
-
-    pip install --user STMint
-
-
-To install system-wide, omit the ``--user`` option. This requires administrative privileges on most systems.
-
 From GitHub
 ^^^^^^^^^^^^^^^^^
 

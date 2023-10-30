@@ -4,14 +4,6 @@ STMint or State Transition Matrix Integrator uses sympy and scipy to symbolicall
 
 STMint Installation
 ===================
-To install from PyPI:
-
-```
-    pip install --user STMint
-```
-
-To install system-wide, omit the ``--user`` option. This requires administrative privileges on most systems.
-
 ---
 If cloning from github, in the cloned STMint directory:
 

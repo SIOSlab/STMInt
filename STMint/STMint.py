@@ -48,6 +48,7 @@ class STMint:
                     * 0 - for no variational equations
                     * 1 - for first order variational equations
                     * 2 - for first and second order variational equations
+
         lambda_dynamics (lambdafied sympy expression):
             The lambdified dynamic equations.
         lambda_dynamics_and_variational (lambdafied sympy expression):
@@ -258,8 +259,8 @@ class STMint:
 
         else:
             self.jacobian = None
-            self.STM = None
             self.variational = None
+            self.STM = None
             self.lambda_dynamics_and_variational = None
 
     def secondVariationalEquations(
