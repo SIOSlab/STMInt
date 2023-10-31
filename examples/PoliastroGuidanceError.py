@@ -20,7 +20,8 @@ def calc_error(stm, transfer_time, r_f, x_0, perturbation):
 
     r_f_1 = np.array([iss_approx_orbit.propagate(transfer_time * u.s).r.value])
 
-    delta_r_f_1 = np.abs(r_f - r_f_1)
+    #delta_r_f_1 = np.abs(r_f - r_f_1)
+    delta_r_f_1 = r_f_1 - r_f
 
     return np.abs(delta_r_f_star - delta_r_f_1)
 
@@ -48,8 +49,9 @@ def calc_sphere_max_error(stm, transfer_time, r_f, x_0, normalized_samples):
 def calc_e_tensor(stm, stt):
     stm_rv = stm[0:3, 3:6]
     stt_rvv = stt[0:3, 3:6, 3:6]
-    return np.einsum(
-        "ilm,lj,mk->ijk", stt_rvv, np.linalg.inv(stm_rv), np.linalg.inv(stm_rv)
+    inv_stm_rv = np.linalg.inv(stm_rv)
+    return 0.5*np.einsum(
+        "ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv
     )
 
 
@@ -68,7 +70,7 @@ iss_orbit = Orbit.from_classical(body.Earth, a, ecc, inc, raan, argp, nu)
 # ISS ICS
 x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
-transfer_time = iss_orbit.period.to(u.s).value / 10.0
+transfer_time = iss_orbit.period.to(u.s).value * 0.4
 
 iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
@@ -89,7 +91,9 @@ E1 = calc_e_tensor(stm, stt)
 
 E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 tensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
-E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 20, 1e-3)
+E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 10, 1e-9)
+print(E1Norm)
+print(E1ArgMax)
 
 for i in range(0, 20):
     # Change so r is linearly distributed
@@ -121,7 +125,12 @@ for i in range(0, 20):
     )
     """
     # Method 1: Analytical method for calculating maximum error
-    m_1yvals.append(pow(r, 2) * E1Norm)
+    m_1yvals.append(pow(r, 2) * np.sqrt(E1Norm))
+
+
+print(s_0yvals)
+print(m_1yvals)
+
 
 # Change xvals' units to meters
 # xvals_m = [x * 1000 for x in xvals]
