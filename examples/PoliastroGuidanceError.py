@@ -22,7 +22,6 @@ def calc_error(stm, transfer_time, r_f, x_0, perturbation):
 
     r_f_1 = np.array([iss_approx_orbit.propagate(transfer_time * u.s).r.value])
 
-    # delta_r_f_1 = np.abs(r_f - r_f_1)
     delta_r_f_1 = r_f_1 - r_f
 
     return np.linalg.norm(delta_r_f_star - delta_r_f_1, ord=2)
@@ -93,13 +92,13 @@ E1 = calc_e_tensor(stm, stt)
 
 E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 tensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
-E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 10, 1e-9)
+E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 100, 1e-9)
 print(E1Norm)
 print(E1ArgMax)
 
-for i in range(0, 20):
+for i in range(0, 25):
     # Change so r is linearly distributed
-    r = 0.5 * (i + 1)
+    r =  2.* (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -136,10 +135,10 @@ for i in range(0, 20):
     initial_guess = np.array([*(E1ArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, r_f, x_0, pert)
-    objective = lambda dr_f_0: err(r * E1ArgMax) - err(dr_f_0)
+    objective = lambda dr_f: -1. * err(dr_f)
     eq_cons = {
         "type": "eq",
-        "fun": lambda dr_f_0: r**2 - dr_f_0**2,
+        "fun": lambda dr_f: r**2 - np.linalg.norm(dr_f, ord=2) ** 2,
     }
 
     min = scipy.optimize.minimize(

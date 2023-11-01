@@ -199,10 +199,10 @@ def power_iteration(tens, vecGuess, maxIter, tol):
     """
     stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
-    vec = None
+    vec = vecGuess
     vecNorm = None
     for i in range(maxIter):
-        vecPrev = vecGuess
+        vecPrev = vec
         vec, vecNorm = power_iterate(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break
@@ -286,10 +286,10 @@ def power_iteration_symmetrizing(tens, vecGuess, maxIter, tol):
     """
     stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
-    vec = None
+    vec = vecGuess
     vecNorm = None
     for i in range(maxIter):
-        vecPrev = vecGuess
+        vecPrev = vec
         vec, vecNorm = power_iterate_symmetrizing(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break

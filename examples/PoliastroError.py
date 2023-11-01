@@ -120,7 +120,7 @@ for i in range(0, 20):
     initial_guess = np.array([*(sttArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, x_0, pert)
-    objective = lambda dv0: err(r * sttArgMax) - err(dv0)
+    objective = lambda dv0: -1.0 * err(dv0)
     eq_cons = {
         "type": "eq",
         "fun": lambda dv0: r**2 - np.linalg.norm(dv0, ord=2) ** 2,
