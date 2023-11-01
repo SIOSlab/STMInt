@@ -113,6 +113,7 @@ for i in range(0, 20):
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(0.5 * pow(r, 2) * m_1norm)
 
+    # Method 2: Making an educated guess at the maximum error.
     m_2yvals.append(calc_error(stm, transfer_time, x_0, r * sttArgMax))
 
     # Method 3: Least Squares Error Maximization
@@ -153,7 +154,7 @@ axs[3].set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
 fig.text(
     0.06,
     0.5,
-    "Maximum Error",
+    "Maximum Error (m)",
     ha="center",
     va="center",
     rotation="vertical",

@@ -1,10 +1,12 @@
 import numpy as np
+import scipy
 from astropy import units as u
 from STMint.STMint import STMint
 from STMint import TensorNormUtilities as tnu
 from poliastro.twobody.orbit import Orbit
 import poliastro.bodies as body
 import matplotlib.pyplot as plt
+from scipy.optimize import least_squares
 
 
 def calc_error(stm, transfer_time, r_f, x_0, perturbation):
@@ -20,10 +22,10 @@ def calc_error(stm, transfer_time, r_f, x_0, perturbation):
 
     r_f_1 = np.array([iss_approx_orbit.propagate(transfer_time * u.s).r.value])
 
-    #delta_r_f_1 = np.abs(r_f - r_f_1)
+    # delta_r_f_1 = np.abs(r_f - r_f_1)
     delta_r_f_1 = r_f_1 - r_f
 
-    return np.abs(delta_r_f_star - delta_r_f_1)
+    return np.linalg.norm(delta_r_f_star - delta_r_f_1, ord=2)
 
 
 def normalize_sphere_samples(r, n):
@@ -50,9 +52,7 @@ def calc_e_tensor(stm, stt):
     stm_rv = stm[0:3, 3:6]
     stt_rvv = stt[0:3, 3:6, 3:6]
     inv_stm_rv = np.linalg.inv(stm_rv)
-    return 0.5*np.einsum(
-        "ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv
-    )
+    return 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
 
 
 # ISS Keplerian Elements
@@ -81,6 +81,8 @@ s_1yvals = []
 s_2yvals = []
 s_3yvals = []
 m_1yvals = []
+m_2yvals = []
+m_3yvals = []
 xvals = []
 
 integrator = STMint(preset="twoBodyEarth", variational_order=2)
@@ -127,21 +129,47 @@ for i in range(0, 20):
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(pow(r, 2) * np.sqrt(E1Norm))
 
+    # Method 2: Making an educated guess at the maximum error.
+    m_2yvals.append(calc_error(stm, transfer_time, r_f, x_0, r * E1ArgMax))
+
+    # Method 3: Least Squares Error Maximization
+    initial_guess = np.array([*(E1ArgMax * r)])
+
+    err = lambda pert: calc_error(stm, transfer_time, r_f, x_0, pert)
+    objective = lambda dr_f_0: err(r * E1ArgMax) - err(dr_f_0)
+    eq_cons = {
+        "type": "eq",
+        "fun": lambda dr_f_0: r**2 - dr_f_0**2,
+    }
+
+    min = scipy.optimize.minimize(
+        objective,
+        initial_guess,
+        method="SLSQP",
+        constraints=eq_cons,
+        options={"ftol": 1e-9, "disp": True},
+    )
+
+    m_3yvals.append(err(min.x))
+
 
 print(s_0yvals)
 print(m_1yvals)
-
 
 # Change xvals' units to meters
 # xvals_m = [x * 1000 for x in xvals]
 
 # Plotting each method in single graph
-fig, axs = plt.subplots(2, sharex=True)
-axs[0].plot(xvals, s_0yvals)
-axs[0].set_title("Method 0")
-axs[1].plot(xvals, m_1yvals)
-axs[1].set_title("Method 1")
-axs[1].set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
+fig, axs = plt.subplots(4, sharex=True)
+axs[1].plot(xvals, s_0yvals)
+axs[1].set_title("Method 0")
+axs[0].plot(xvals, m_1yvals)
+axs[0].set_title("Method 1")
+axs[2].plot(xvals, m_2yvals)
+axs[2].set_title("Method 2")
+axs[3].plot(xvals, m_3yvals)
+axs[3].set_title("Method 3")
+axs[3].set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
 fig.text(
     0.06,
     0.5,
@@ -151,11 +179,26 @@ fig.text(
     rotation="vertical",
     fontsize=16,
 )
+plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
-# Plotting only method 1
+# Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals, m_1yvals)
+model3.plot(xvals, m_3yvals)
 model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
 model3.set_ylabel("Maximum Error (km)", fontsize=16)
+
+# Plotting error between methods (1 and 2 with resepct to 3)
+error1_3 = []
+error2_3 = []
+for i in range(len(xvals)):
+    error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
+    error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
+
+fig3, error = plt.subplots(figsize=(7, 4.8))
+error.plot(xvals, error1_3, label="Methods 1 and 3")
+error.plot(xvals, error2_3, label="Methods 2 and 3")
+error.set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
+error.set_ylabel("Method Percentage Error", fontsize=16)
+error.legend()
 
 plt.show()
