@@ -5,6 +5,29 @@ from STMint import TensorNormUtilities as tnu
 import matplotlib.pyplot as plt
 from scipy.optimize import least_squares
 
+# Gateway Nrho ics: transfer sampling error
+mu = 1.0 / (81.30059 + 1.0)
+x0 = 1.02202151273581740824714855590570360
+z0 = 0.182096761524240501132977765539282777
+yd0 = -0.103256341062793815791764364248006121
+period = 1.5111111111111111111111111111111111111111
+
+# Dimensionalized Unit Conversion (Koon Lo Marsden pg. 25, Earth-Moon)
+
+L = 3.85e5
+V = 1.025
+T = 2.361e6
+
+x_0 = np.array([x0, 0, z0, 0, yd0, 0])
+
+# Nrho Propagator
+integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
+
+transfer_time = period * 0.4
+
+x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
+r_f = x_f[:3]
+
 
 def calc_error(stm, transfer_time, r_f, x_0, perturbation):
     delta_r_f_star = perturbation
@@ -47,23 +70,6 @@ def calc_e_tensor(stm, stt):
     return 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
 
 
-# Gateway Nrho ics: transfer sampling error
-mu = 1.0 / (81.30059 + 1.0)
-x0 = 1.02202151273581740824714855590570360
-z0 = 0.182096761524240501132977765539282777
-yd0 = -0.103256341062793815791764364248006121
-period = 1.5111111111111111111111111111111111111111
-
-x_0 = np.array([x0, 0, z0, 0, yd0, 0])
-
-# Nrho Propagator
-integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
-
-transfer_time = period * 0.4
-
-x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
-r_f = x_f[:3]
-
 s_0yvals = []
 s_1yvals = []
 s_2yvals = []
@@ -79,9 +85,9 @@ E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 tensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
 E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 100, 1e-9)
 
-for i in range(0, 10):
-    # Change so r is linearly distributed
-    r = np.linalg.norm(x_0[3:]) / 100000.0 * ((i + 1) * 50.0)
+for i in range(0, 20):
+    # Scale of 2000km
+    r = 100.0 * (i + 1) / L
     xvals.append(r)
 
     # Method 0: Sampling
@@ -134,10 +140,17 @@ for i in range(0, 10):
 
     m_3yvals.append(err(min.x))
 
-# Change xvals' units to meters
-# xvals_m = [x * 1000 for x in xvals]
+# Change normalized units to meters and seconds
+
+xvals = [(x * L) for x in xvals]
+s_0yvals = [(x * L) for x in s_0yvals]
+m_1yvals = [(x * L) for x in m_1yvals]
+m_2yvals = [(x * L) for x in m_2yvals]
+m_3yvals = [(x * L) for x in m_3yvals]
 
 # Plotting each method in single graph
+plt.style.use("seaborn-v0_8-darkgrid")
+
 fig, axs = plt.subplots(4, sharex=True)
 axs[1].plot(xvals, s_0yvals)
 axs[1].set_title("Method 0")

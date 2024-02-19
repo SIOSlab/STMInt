@@ -93,12 +93,10 @@ E1 = calc_e_tensor(stm, stt)
 E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 tensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
 E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 100, 1e-9)
-print(E1Norm)
-print(E1ArgMax)
 
 for i in range(0, 25):
-    # Change so r is linearly distributed
-    r = 2.0 * (i + 1)
+    # Scale of 2000km
+    r = 80 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -151,14 +149,9 @@ for i in range(0, 25):
 
     m_3yvals.append(err(min.x))
 
-
-print(s_0yvals)
-print(m_1yvals)
-
-# Change xvals' units to meters
-# xvals_m = [x * 1000 for x in xvals]
-
 # Plotting each method in single graph
+plt.style.use("seaborn-v0_8-darkgrid")
+
 fig, axs = plt.subplots(4, sharex=True)
 axs[1].plot(xvals, s_0yvals)
 axs[1].set_title("Method 0")

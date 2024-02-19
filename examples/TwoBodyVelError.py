@@ -141,8 +141,9 @@ F1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 FtensSquared = np.einsum("ijk,ilm->jklm", F1, F1)
 F1ArgMax, F1Norm = tnu.power_iteration_symmetrizing(FtensSquared, F1guess, 100, 1e-9)
 
-for i in range(0, 25):
-    r = 2.0 * (i + 1)
+for i in range(0, 20):
+    # Scale of 2000km
+    r = 80 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -196,25 +197,23 @@ for i in range(0, 25):
     m_3yvals.append(err(min.x))
     print("Number of radii sampled: " + str(i + 1))
 
-#   Change xvals' units to meters
-xvals_m = [x * 1000 for x in xvals]
-m_3yvals_m = [x * 1000 for x in m_3yvals]
-
 # Plotting each method in single graph
+plt.style.use("seaborn-v0_8-darkgrid")
+
 fig, axs = plt.subplots(4, sharex=True)
-axs[1].plot(xvals_m, s_0yvals)
+axs[1].plot(xvals, s_0yvals)
 axs[1].set_title("Method 0")
-axs[0].plot(xvals_m, m_1yvals)
+axs[0].plot(xvals, m_1yvals)
 axs[0].set_title("Method 1")
-axs[2].plot(xvals_m, m_2yvals)
+axs[2].plot(xvals, m_2yvals)
 axs[2].set_title("Method 2")
-axs[3].plot(xvals_m, m_3yvals)
+axs[3].plot(xvals, m_3yvals)
 axs[3].set_title("Method 3")
-axs[3].set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
+axs[3].set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
 fig.text(
     0.06,
     0.5,
-    "Maximum Error (m/s)",
+    "Maximum Error (km/s)",
     ha="center",
     va="center",
     rotation="vertical",
@@ -224,22 +223,22 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals_m, m_3yvals_m)
-model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-model3.set_ylabel("Maximum Error (m/s)", fontsize=16)
+model3.plot(xvals, m_3yvals)
+model3.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
+model3.set_ylabel("Maximum Error (km/s)", fontsize=16)
 
 
 # Plotting error between methods (1 and 2 with resepct to 3)
 error1_3 = []
 error2_3 = []
-for i in range(len(xvals_m)):
+for i in range(len(xvals)):
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
 fig3, error = plt.subplots(figsize=(7, 4.8))
-error.plot(xvals_m, error1_3, label="Methods 1 and 3")
-error.plot(xvals_m, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
+error.plot(xvals, error1_3, label="Methods 1 and 3")
+error.plot(xvals, error2_3, label="Methods 2 and 3")
+error.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
 error.set_ylabel("Method Percentage Error", fontsize=16)
 error.legend()
 

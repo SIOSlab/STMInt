@@ -252,7 +252,7 @@ class STMint:
                 lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
                 n = len(self.vars)
                 self.lambda_dynamics_and_variational2 = (
-                    lambda t, states: self.secondVariationalEquations(
+                    lambda t, states: self._secondVariationalEquations(
                         lambda_dyn, lambda_jacobian, lambda_hessian, states, n
                     )
                 )
@@ -263,7 +263,7 @@ class STMint:
             self.STM = None
             self.lambda_dynamics_and_variational = None
 
-    def secondVariationalEquations(
+    def _secondVariationalEquations(
         self, lambda_dyn, lambda_jacobian, lambda_hessian, states, n
     ):
         """This method creates the second order variational equations for given
