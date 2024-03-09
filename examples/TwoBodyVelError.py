@@ -131,15 +131,17 @@ stm = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
 stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
 
 E1 = calc_e_tensor(stm, stt)
-F1 = calc_f_tensor(E1, stm)
+Eprime = calc_f_tensor(E1, stm)
 
 E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 EtensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
 E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(EtensSquared, E1guess, 100, 1e-9)
 
-F1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
-FtensSquared = np.einsum("ijk,ilm->jklm", F1, F1)
-F1ArgMax, F1Norm = tnu.power_iteration_symmetrizing(FtensSquared, F1guess, 100, 1e-9)
+Eprimeguess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
+FtensSquared = np.einsum("ijk,ilm->jklm", Eprime, Eprime)
+EprimeArgMax, EprimeNorm = tnu.power_iteration_symmetrizing(
+    FtensSquared, Eprimeguess, 100, 1e-9
+)
 
 for i in range(0, 20):
     # Scale of 2000km
@@ -171,13 +173,15 @@ for i in range(0, 20):
     )
     """
     # Method 1: Analytical method for calculating maximum error
-    m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
+    m_1yvals.append(pow(r, 2) * np.sqrt(EprimeNorm))
 
     # Method 2: Making an educated guess at the maximum error.
-    m_2yvals.append(calc_error(integrator, stm, transfer_time, r_f, x_0, r * F1ArgMax))
+    m_2yvals.append(
+        calc_error(integrator, stm, transfer_time, r_f, x_0, r * EprimeArgMax)
+    )
 
     # Method 3: Least Squares Error Maximization
-    initial_guess = np.array([*(F1ArgMax * r)])
+    initial_guess = np.array([*(EprimeArgMax * r)])
 
     err = lambda pert: calc_error(integrator, stm, transfer_time, r_f, x_0, pert)
     objective = lambda dr_f: -1.0 * err(dr_f)

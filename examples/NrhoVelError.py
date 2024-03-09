@@ -118,15 +118,17 @@ m_3yvals = []
 xvals = []
 
 E1 = calc_e_tensor(stm, stt)
-F1 = calc_f_tensor(E1, stm)
+Eprime = calc_f_tensor(E1, stm)
 
 E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 EtensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
 E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(EtensSquared, E1guess, 100, 1e-9)
 
 EnGuess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
-EntensSquared = np.einsum("ijk,ilm->jklm", F1, F1)
-EnArgMax, F1Norm = tnu.power_iteration_symmetrizing(EntensSquared, EnGuess, 100, 1e-9)
+EntensSquared = np.einsum("ijk,ilm->jklm", Eprime, Eprime)
+EnArgMax, EprimeNorm = tnu.power_iteration_symmetrizing(
+    EntensSquared, EnGuess, 100, 1e-9
+)
 
 for i in range(0, 20):
     # Scale of 2000km
@@ -158,7 +160,7 @@ for i in range(0, 20):
     )
     """
     # Method 1: Analytical method for calculating maximum error
-    m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
+    m_1yvals.append(pow(r, 2) * np.sqrt(EprimeNorm))
 
     # Method 2: Making an educated guess at the maximum error.
     m_2yvals.append(calc_error(integrator, stm, transfer_time, r_f, x_0, r * EnArgMax))

@@ -51,7 +51,13 @@ def calc_e_tensor(stm, stt):
     stm_rv = stm[0:3, 3:6]
     stt_rvv = stt[0:3, 3:6, 3:6]
     inv_stm_rv = np.linalg.inv(stm_rv)
-    return 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
+
+    E = 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
+    Eguess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
+    tensSquared = np.einsum("ijk,ilm->jklm", E, E)
+    EArgMax, ENorm = tnu.power_iteration_symmetrizing(tensSquared, Eguess, 100, 1e-9)
+
+    return E, EArgMax, ENorm
 
 
 # ISS Keplerian Elements
@@ -69,11 +75,15 @@ iss_orbit = Orbit.from_classical(body.Earth, a, ecc, inc, raan, argp, nu)
 # ISS ICS
 x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
-transfer_time = iss_orbit.period.to(u.s).value * 0.4
+period = iss_orbit.period.to(u.s).value
+
+transfer_time = period * 0.4
 
 iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
 r_f = np.array([*iss_reference_orbit.r.value])
+
+# Error Aproximation Methods
 
 s_0yvals = []
 s_1yvals = []
@@ -85,14 +95,23 @@ m_3yvals = []
 xvals = []
 
 integrator = STMint(preset="twoBodyEarth", variational_order=2)
-stm = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
-stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
+_, stm, stt = integrator.dynVar_int2(
+    [0, transfer_time], x_0, max_step=(transfer_time) / 100.0, output="final"
+)
 
-E1 = calc_e_tensor(stm, stt)
 
-E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
-tensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
-E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 100, 1e-9)
+E1, E1ArgMax, E1Norm = calc_e_tensor(stm, stt)
+
+# Tensor Norm Calculations
+
+tensor_norms = []
+
+_, stms, stts, ts = integrator.dynVar_int2(
+    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
+)
+
+for i in range(1, len(ts)):
+    tensor_norms.append(calc_e_tensor(stms[i], stts[i])[2])
 
 for i in range(0, 20):
     # Scale of 2000km
@@ -150,6 +169,9 @@ for i in range(0, 20):
 
     m_3yvals.append(err(min.x))
 
+# Changing ts to periods
+ts = [(x / period) for x in ts]
+
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
 
@@ -197,5 +219,11 @@ error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=12)
+
+fig4, norms = plt.subplots(figsize=(8, 4.8))
+norms.plot(ts[21:], tensor_norms[20:])
+norms.set_xlabel("Time of Flight (periods)", fontsize=18)
+norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_yscale("log")
 
 plt.show()
