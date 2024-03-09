@@ -19,8 +19,21 @@ x_0 = np.array([x0, 0, z0, 0, yd0, 0])
 # Nrho Propagator
 integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
-x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
+x_f, stm, stt = integrator.dynVar_int2(
+    [0, transfer_time], x_0, max_step=(transfer_time) / 100.0, output="final"
+)
+
+_, stms, stts, ts = integrator.dynVar_int2(
+    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
+)
+
+
 r_f = x_f[:3]
+
+tensor_norms = []
+for i in range(1, len(ts)):
+    tensor_norms.append(tnu.stt_2_norm(stms[i][:3, 3:], stts[i][:3, 3:, 3:])[1])
+
 
 # Dimensionalized Unit Conversion (Koon Lo Marsden pg. 25, Earth-Moon)
 
@@ -100,7 +113,8 @@ for i in range(0, 20):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        options={"ftol": 1e-12, "disp": True},
+        tol=1e-17,
+        options={"disp": True},
     )
 
     m_3yvals.append(err(min.x))
@@ -112,6 +126,11 @@ s_0yvals = [(x * L) * 1000 for x in s_0yvals]
 m_1yvals = [(x * L) * 1000 for x in m_1yvals]
 m_2yvals = [(x * L) * 1000 for x in m_2yvals]
 m_3yvals = [(x * L) * 1000 for x in m_3yvals]
+tensor_norms = [((x * (T**2)) / (L * 1000)) for x in tensor_norms]
+
+# Change integrator time-step to periods
+
+ts = [(x / period) for x in ts]
 
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
@@ -140,8 +159,8 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
 model3.plot(xvals, m_1yvals)
-model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-model3.set_ylabel("Maximum Error (m)", fontsize=16)
+model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
+model3.set_ylabel("Maximum Error (m)", fontsize=18)
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
 error0_3 = []
@@ -152,17 +171,22 @@ for i in range(len(xvals)):
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
-print(m_2yvals)
-print(m_3yvals)
-print(error2_3)
-
-fig3, error = plt.subplots(figsize=(7, 4.8))
-error.plot(xvals, error0_3, label="Methods 0 and 3")
-error.plot(xvals, error1_3, label="Methods 1 and 3")
-error.plot(xvals, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-error.set_ylabel("Method Percentage Error", fontsize=16)
+fig3, error = plt.subplots(figsize=(8, 4.8))
+error.plot(xvals, error0_3, label="Sampling")
+error.plot(xvals, error1_3, label="Tensor Norm")
+error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
+error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
-error.legend()
+error.legend(fontsize=12)
+
+fig4, norms = plt.subplots(figsize=(8, 4.8))
+norms.plot(
+    ts[21:],
+    tensor_norms[20:],
+)
+norms.set_xlabel("Time of Flight (periods)", fontsize=18)
+norms.set_ylabel("Tensor Norm (log s^2 / m)", fontsize=18)
+norms.set_yscale("log")
 
 plt.show()

@@ -128,9 +128,9 @@ EnGuess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
 EntensSquared = np.einsum("ijk,ilm->jklm", F1, F1)
 EnArgMax, F1Norm = tnu.power_iteration_symmetrizing(EntensSquared, EnGuess, 100, 1e-9)
 
-for i in range(0, 25):
+for i in range(0, 20):
     # Scale of 2000km
-    r = (80.0 * (i + 1)) / L
+    r = (100.0 * (i + 1)) / L
     xvals.append(r)
 
     # Method 0: Sampling
@@ -178,7 +178,8 @@ for i in range(0, 25):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        options={"ftol": 1e-9, "disp": True},
+        tol=(1e-9),
+        options={"disp": True},
     )
 
     m_3yvals.append(err(min.x))
@@ -186,10 +187,10 @@ for i in range(0, 25):
 # Change normalized units to meters and seconds
 
 xvals = [(x * L) for x in xvals]
-s_0yvals = [(x * L) for x in s_0yvals]
-m_1yvals = [(x * L) for x in m_1yvals]
-m_2yvals = [(x * L) for x in m_2yvals]
-m_3yvals = [(x * L) for x in m_3yvals]
+s_0yvals = [(x * V) for x in s_0yvals]
+m_1yvals = [(x * V) for x in m_1yvals]
+m_2yvals = [(x * V) for x in m_2yvals]
+m_3yvals = [(x * V) for x in m_3yvals]
 
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
@@ -203,7 +204,7 @@ axs[2].plot(xvals, m_2yvals)
 axs[2].set_title("Method 2")
 axs[3].plot(xvals, m_3yvals)
 axs[3].set_title("Method 3")
-axs[3].set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
+axs[3].set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
 fig.text(
     0.06,
     0.5,
@@ -218,23 +219,27 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
 model3.plot(xvals, m_3yvals)
-model3.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
-model3.set_ylabel("Maximum Error (km/s)", fontsize=16)
+model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
+model3.set_ylabel("Maximum Error (km/s)", fontsize=18)
 
 
-# Plotting error between methods (1 and 2 with resepct to 3)
+# Plotting error between methods (0, 1, and 2 with respect to 3)
+error0_3 = []
 error1_3 = []
 error2_3 = []
 for i in range(len(xvals)):
+    error0_3.append((abs((s_0yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
-fig3, error = plt.subplots(figsize=(7, 4.8))
-error.plot(xvals, error1_3, label="Methods 1 and 3")
-error.plot(xvals, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (km)", fontsize=16)
-error.set_ylabel("Method Percentage Error", fontsize=16)
-error.legend()
+fig3, error = plt.subplots(figsize=(8, 4.8))
+error.plot(xvals, error0_3, label="Sampling")
+error.plot(xvals, error1_3, label="Tensor Norm")
+error.plot(xvals, error2_3, label="Educated Guess")
+error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
+error.set_ylabel("Method Percentage Error", fontsize=18)
+error.set_yscale("log")
+error.legend(fontsize=12)
 
 
 plt.show()
