@@ -84,7 +84,7 @@ stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
 
 for i in range(0, 20):
     # Change so r is linearly distributed
-    r = np.linalg.norm(x_0[3:]) / (100000) * ((i + 1) * 50)
+    r = np.linalg.norm(x_0[3:]) / (100000) * ((i + 1) * 50) *10
     xvals.append(r)
     sttArgMax, m_1norm = tnu.stt_2_norm(stm[:3, 3:], stt[:3, 3:, 3:])
 

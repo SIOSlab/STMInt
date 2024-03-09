@@ -91,6 +91,8 @@ for i in range(0, 20):
     tens = np.einsum("ilm,lj,mk->ijk", stt[:3, 3:, 3:], np.linalg.inv(stm[:3, 3:]), np.linalg.inv(stm[:3, 3:]))
     tensSquared = np.einsum("ijk,ilm->jklm", tens, tens)
     sttArgMax, m_1norm = tnu.power_iteration_symmetrizing(tensSquared, E1guess, 100, 1e-9)
+    sttArgMax = np.matmul(np.linalg.inv(stm[:3, 3:]), sttArgMax)
+    sttArgMax = sttArgMax / np.linalg.norm(sttArgMax)
     m_1norm = np.linalg.norm(np.einsum("ijk,j,k->i", stt[:3, 3:, 3:], sttArgMax, sttArgMax)) / np.linalg.norm(np.einsum("ij,j->i", stm[:3, 3:], sttArgMax))
 
 
