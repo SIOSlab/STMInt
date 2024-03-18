@@ -5,12 +5,22 @@ import math
 import matplotlib.pyplot as plt
 import numpy.linalg
 
-# Calculating the solutions to non-dimensional two-body motion
-integ = STMint(preset="twoBody", variational_order=2)
+# Gateway Nrho ics: transfer sampling error
+mu = 1.0 / (81.30059 + 1.0)
+x0 = 1.02202151273581740824714855590570360
+z0 = 0.182096761524240501132977765539282777
+yd0 = -0.103256341062793815791764364248006121
+period = 1.5111111111111111111111111111111111111111
+
+x_0 = np.array([x0, 0, z0, 0, yd0, 0])
+
+# Nrho Propagator
+integ = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
 # integrate variational equations
+# 10 periods of a circular orbit with unit radius
 states, stms, stts, ts = integ.dynVar_int2(
-    [0, (2.0 * math.pi)], [1, 0, 0, 0, 1, 0], output="all", max_step=0.01
+    [0, period], x_0, output="all", max_step=0.005
 )
 
 # calculate nonlinearity index from the stms and stts over time
@@ -32,24 +42,21 @@ for i in range(len(ts)):
     NLI5s.append(tnu.nonlin_index_DEMoN2(stms[i], stts[i]))
     NLI6s.append(np.sqrt(tnu.nonlin_index_TEMoN3(stms[i], stts[i])))
 
-xvals = np.array([0,.25,.5,.75,1])*2.*np.pi
+# Plotting
+xvals = np.array([0,.25,.5,.75,1])*period
+#for i in range(0, 3, 1):
+#    xvals.append(i * period)
+
 xlabels = ["0", "1/4", "1/2", "3/4", "1"]
-
-# # Plotting
-# xvals = []
-# for i in range(0, 5, 2):
-#     xvals.append(math.pi * i)
-
-# xlabels = [0]
-# for i in range(2, 5, 2):
-#     xlabels.append(str(i) + r"$\pi$")
+#for i in range(1, 3, 1):
+#    xlabels.append(str(i))
 
 
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.plot(ts, NLI1s, label="2-Norm Bound")
-ax.plot(ts, NLI2s, label="(\u221e, 2)-Norm")
-ax.plot(ts, NLI3s, label="2-Norm")
-ax.plot(ts, NLI4s, label="(Frobenius, 2)-Norm")
+ax.semilogy(ts, NLI1s, label="2-Norm Bound")
+ax.semilogy(ts, NLI2s, label="(\u221e, 2)-Norm")
+ax.semilogy(ts, NLI3s, label="2-Norm")
+ax.semilogy(ts, NLI4s, label="(Frobenius, 2)-Norm")
 #ax.set_title("Nonlinearity Associated With Non-dimensional Circular Two-Body Motion")
 ax.set_xlabel("Time (Periods)",fontsize=18)
 ax.set_xticks(xvals, xlabels, fontsize=16)
@@ -58,11 +65,11 @@ ax.set_ylabel("Nonlinearity Index", fontsize=18)
 ax.legend(fontsize=12)
 
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.plot(ts, NLI1s, label="2-Norm Bound")
-ax.plot(ts, NLI2s, label="(\u221e, 2)-Norm")
-ax.plot(ts, NLI3s, label="2-Norm")
-ax.plot(ts, NLI4s, label="(Frobenius, 2)-Norm")
-ax.plot(ts, NLI6s, label="TEMoN-3")
+ax.semilogy(ts, NLI1s, label="2-Norm Bound")
+ax.semilogy(ts, NLI2s, label="(\u221e, 2)-Norm")
+ax.semilogy(ts, NLI3s, label="2-Norm")
+ax.semilogy(ts, NLI4s, label="(Frobenius, 2)-Norm")
+ax.semilogy(ts, NLI6s, label="TEMoN-3")
 #ax.set_title("Nonlinearity Associated With Non-dimensional Circular Two-Body Motion")
 ax.set_xlabel("Time (Periods)",fontsize=18)
 ax.set_xticks(xvals, xlabels, fontsize=16)
@@ -87,14 +94,14 @@ ax.set_ylabel("Nonlinearity Index", fontsize=18)
 # ax.set_ylabel("Nonlinearity Index", fontsize=18)
 
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.plot(ts, NLI5s)
+ax.semilogy(ts, NLI5s)
 ax.set_xlabel("Time (Periods)",fontsize=18)
 ax.set_xticks(xvals, xlabels, fontsize=16)
 ax.tick_params(axis='y', labelsize=16)
 ax.set_ylabel("Nonlinearity Index", fontsize=18)
 
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.plot(ts, NLI6s)
+ax.semilogy(ts, NLI6s)
 ax.set_xlabel("Time (Periods)",fontsize=18)
 ax.set_xticks(xvals, xlabels, fontsize=16)
 ax.tick_params(axis='y', labelsize=16)

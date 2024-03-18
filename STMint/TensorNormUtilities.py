@@ -251,6 +251,87 @@ def power_iteration_symmetrizing(tens, vecGuess, maxIter, tol):
     return vec, vecNorm
 
 
+def get_polynomial_bound(tens):
+    """Function to find a bound on the value of a sclar valued polynomial on the unit sphere
+
+    Args:
+        tens (np array)
+            Tensor
+    
+    Returns:
+        K (double)
+            Bound on the polynomial on the unit sphere
+    """
+    tensOrder = tens.ndim
+    return np.sum(np.abs(tens)) * ((tensOrder - 1.) * tensOrder)
+
+def MM_iterate(stringEin, tensOrder, tens, K, vec):
+    """Function to perform one step of polynomial optimization on a scalar valued polynomial on unit sphere
+
+    Single step
+
+    Args:
+        stringEin (string)
+            String to instruct einsum to perform contractions
+
+        tensOrder (int)
+            Order of the tensor
+
+        tens (np array)
+            Tensor
+
+        K (double)
+            Damping constant
+
+        vec (np array)
+            Vector
+
+    Returns:
+        vecNew (np array)
+
+        vecNorm (float)
+    """
+    poly = np.einsum(stringEin, tens, *([vec] * (tensOrder - 1)))
+    vecNew = vec - 1/K * poly
+    vecNorm = np.linalg.norm(vecNew)
+    return vecNew / vecNorm, vecNorm
+
+
+def MM_iteration(tens, vecGuess, maxIter, tol):
+    """Function to perform polynomial optimization on a scalar valued polynomial on unit sphere
+
+    Args:
+        tens (np array)
+            Tensor
+
+        vec (np array)
+            Vector
+
+        maxIter (int)
+            Max number of iterations to perform
+
+        tol (float)
+            Tolerance for difference and iterates
+
+    Returns:
+        eigVec (np array)
+
+        eigValue (np array)
+    """
+    stringEin = power_iterate_string(tens)
+    tensOrder = tens.ndim
+    vec = vecGuess
+    vecNorm = None
+    K = get_polynomial_bound(tens)
+    for i in range(maxIter):
+        vecPrev = vec
+        vec, vecNorm = MM_iterate(stringEin, tensOrder, tens, K, vecPrev)
+        if np.linalg.norm(vec - vecPrev) < tol:
+            break
+    return vec, vecNorm
+
+
+
 def symmetrize_tensor(tens):
     """Symmetrize a tensor
 
@@ -327,12 +408,54 @@ def nonlin_index_DEMoN2(stm, stt):
         #guess = np.array([10,1,3,1,1,.1])
         guess = guess / np.linalg.norm(guess)
         #guess = stmVVec
-        argMax, m_1norm = power_iteration(tensSquaredSym, guess, 200, 1e-9)
+        argMax, m_1norm = power_iteration(tensSquaredSym, guess, 300, 1e-9)
         argMax = np.matmul(istm, argMax)
         argMax = argMax / np.linalg.norm(argMax)
         demon = np.linalg.norm(np.einsum("ijk,j,k->i", stt, argMax, argMax)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))
         maxdemon = max(demon, maxdemon)
     return maxdemon
+
+
+
+def nonlin_index_TEMoN3(stm, stt):
+    """Function to calculate the nonlinearity index
+
+    Using tensor eigenvalues, the quotient of the induced 2-norm 
+    of the 3rd order term in the CGT series with the 2-norm of the second order term in the CGT series
+
+    Args:
+        stm (np array)
+            State transition matrix (used to generate guess)
+
+        stt (np array)
+            Arbitrary order state transition tensor
+
+    Returns:
+        nonlinearity_index (float)
+    """
+    maxtemon = 0
+    istm = np.linalg.inv(stm)
+    CGT3 = np.einsum("lij,lk->ijk", stt, stm)
+    tens =  np.einsum("lmn,li,mj,nk->ijk", CGT3, istm, istm, istm)
+    tens = symmetrize_tensor(tens)
+    K = get_polynomial_bound(tens)
+    print("K is")
+    print(K)
+    for i in range(100):
+        guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
+        guess = guess / np.linalg.norm(guess)
+        argMax, m_1norm = MM_iteration(-1. * tens, guess, 800, 1e-9)
+        argMax = np.matmul(istm, argMax)
+        argMax = argMax / np.linalg.norm(argMax)
+        temon = np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax, argMax, argMax)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))**2
+
+        argMax1, m_1norm = MM_iteration(tens, guess, 800, 1e-9)
+        argMax1 = np.matmul(istm, argMax1)
+        argMax1 = argMax1 / np.linalg.norm(argMax1)
+        temon1 = np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax1, argMax1, argMax1)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax1))**2
+        maxtemon = max(temon, maxtemon)
+        maxtemon = max(temon1, maxtemon)
+    return maxtemon
 
 
 
