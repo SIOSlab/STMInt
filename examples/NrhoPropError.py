@@ -1,6 +1,5 @@
 import numpy as np
 import scipy
-from astropy import units as u
 from STMint.STMint import STMint
 from STMint import TensorNormUtilities as tnu
 import matplotlib.pyplot as plt

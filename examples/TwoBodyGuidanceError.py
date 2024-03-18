@@ -59,8 +59,10 @@ def calc_e_tensor(stm, stt):
     # try 10 different initial guesses for symmetric higher order power iteration
     for i in range(10):
         Eguess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
-        Eguess =  Eguess / np.linalg.norm(Eguess, ord=2)
-        EArgMax, ENorm = tnu.power_iteration_symmetrizing(tensSquared, Eguess, 100, 1e-9)
+        Eguess = Eguess / np.linalg.norm(Eguess, ord=2)
+        EArgMax, ENorm = tnu.power_iteration_symmetrizing(
+            tensSquared, Eguess, 100, 1e-9
+        )
         if ENorm > ENormMax:
             ENormMax = ENorm
             EArgMaxMax = EArgMax
@@ -230,8 +232,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
 norms.set_yscale("log")
-plt.ylim(0,1)
+plt.ylim(1e-10, 10)
 plt.show()
- 

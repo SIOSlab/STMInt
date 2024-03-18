@@ -50,13 +50,44 @@ def calc_e_tensor(stm, stt):
     stm_rv = stm[0:3, 3:6]
     stt_rvv = stt[0:3, 3:6, 3:6]
     inv_stm_rv = np.linalg.inv(stm_rv)
-    return 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
+
+    E = 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
+    tensSquared = np.einsum("ijk,ilm->jklm", E, E)
+    ENormMax = 0
+    EArgMaxMax = 0
+    # try 10 different initial guesses for symmetric higher order power iteration
+    for i in range(10):
+        Eguess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
+        Eguess = Eguess / np.linalg.norm(Eguess, ord=2)
+        EArgMax, ENorm = tnu.power_iteration_symmetrizing(
+            tensSquared, Eguess, 100, 1e-9
+        )
+        if ENorm > ENormMax:
+            ENormMax = ENorm
+            EArgMaxMax = EArgMax
+    return E, EArgMaxMax, ENormMax
 
 
-def calc_f_tensor(e_tens, stm):
+def calc_e_prime_tensor(e_tens, stm):
     stm_rv = stm[0:3, 3:6]
     inv_stm_rv = np.linalg.inv(stm_rv)
-    return np.einsum("il,ljk->ijk", inv_stm_rv, e_tens)
+
+    Eprime = np.einsum("il,ljk->ijk", inv_stm_rv, e_tens)
+    EprimeTensSquared = np.einsum("ijk,ilm->jklm", Eprime, Eprime)
+    EprimeNormMax = 0
+    EprimeArgMaxMax = 0
+
+    for i in range(10):
+        EprimeGuess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
+        EprimeGuess = EprimeGuess / np.linalg.norm(EprimeGuess, ord=2)
+        EprimeArgMax, EprimeNorm = tnu.power_iteration_symmetrizing(
+            EprimeTensSquared, EprimeGuess, 100, 1e-9
+        )
+        if EprimeNorm > EprimeNormMax:
+            EprimeNormMax = EprimeNorm
+            EprimeArgMaxMax = EprimeArgMax
+
+    return Eprime, EprimeArgMaxMax, EprimeNormMax
 
 
 def newton_root_velocity(
@@ -111,7 +142,8 @@ iss_orbit = Orbit.from_classical(body.Earth, a, ecc, inc, raan, argp, nu)
 # ISS ICS
 x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
-transfer_time = iss_orbit.period.to(u.s).value * 0.4
+period = iss_orbit.period.to(u.s).value
+transfer_time = period * 0.4
 
 iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
@@ -127,21 +159,24 @@ m_3yvals = []
 xvals = []
 
 integrator = STMint(preset="twoBodyEarth", variational_order=2)
-stm = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
-stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
+_, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
 
-E1 = calc_e_tensor(stm, stt)
-Eprime = calc_f_tensor(E1, stm)
+E1 = calc_e_tensor(stm, stt)[0]
+E1prime, E1primeArgMax, E1primeNorm = calc_e_prime_tensor(E1, stm)
 
-E1guess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
-EtensSquared = np.einsum("ijk,ilm->jklm", E1, E1)
-E1ArgMax, E1Norm = tnu.power_iteration_symmetrizing(EtensSquared, E1guess, 100, 1e-9)
+# Tensor Norm Calculations
 
-Eprimeguess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
-FtensSquared = np.einsum("ijk,ilm->jklm", Eprime, Eprime)
-EprimeArgMax, EprimeNorm = tnu.power_iteration_symmetrizing(
-    FtensSquared, Eprimeguess, 100, 1e-9
+tensor_norms = []
+
+_, stms, stts, ts = integrator.dynVar_int2(
+    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
 )
+
+for i in range(1, len(ts)):
+    tensor_norms.append(
+        calc_e_prime_tensor(calc_e_tensor(stms[i], stts[i])[0], stms[i])[2]
+    )
+
 
 for i in range(0, 20):
     # Scale of 2000km
@@ -151,7 +186,7 @@ for i in range(0, 20):
     # Sampling Method with different number of samples.
     s_0yvals.append(
         calc_sphere_max_error(
-            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 100)
+            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 1000)
         )
     )
 
@@ -173,15 +208,15 @@ for i in range(0, 20):
     )
     """
     # Method 1: Analytical method for calculating maximum error
-    m_1yvals.append(pow(r, 2) * np.sqrt(EprimeNorm))
+    m_1yvals.append(pow(r, 2) * np.sqrt(E1primeNorm))
 
     # Method 2: Making an educated guess at the maximum error.
     m_2yvals.append(
-        calc_error(integrator, stm, transfer_time, r_f, x_0, r * EprimeArgMax)
+        calc_error(integrator, stm, transfer_time, r_f, x_0, r * E1primeArgMax)
     )
 
     # Method 3: Least Squares Error Maximization
-    initial_guess = np.array([*(EprimeArgMax * r)])
+    initial_guess = np.array([*(E1primeArgMax * r)])
 
     err = lambda pert: calc_error(integrator, stm, transfer_time, r_f, x_0, pert)
     objective = lambda dr_f: -1.0 * err(dr_f)
@@ -250,5 +285,11 @@ error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=12)
 
+fig4, norms = plt.subplots(figsize=(8, 4.8))
+norms.plot(ts[21:], tensor_norms[20:])
+norms.set_xlabel("Time of Flight (periods)", fontsize=18)
+norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_yscale("log")
+plt.show()
 
 plt.show()
