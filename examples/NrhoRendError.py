@@ -81,7 +81,7 @@ def calc_f_tensor(stm, stt):
     stt_rvv = stt[0:3, 3:6, 3:6]
     stt_rvr = stt[0:3, 3:6, 0:3]
 
-    stm_mult = np.matmul(inv_stm_rv, stm_rr)
+    stm_mult = -1.0 * np.matmul(inv_stm_rv, stm_rr)
 
     first = np.einsum("ijl,lk->ijk", stt_rrv, stm_mult)
     second = np.einsum("ilk,lj->ijk", stt_rvr, stm_mult)
@@ -235,7 +235,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (1 / km)", fontsize=18)
 norms.set_yscale("log")
 plt.show()
 

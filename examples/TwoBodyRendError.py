@@ -10,13 +10,15 @@ from scipy.optimize import least_squares
 
 
 def calc_error(stm, transfer_time, x_0, perturbation):
+
+
     iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
     r_f_ref = np.array([*iss_reference_orbit.r.value])
 
     delta_r_0 = np.array([*perturbation, 0, 0, 0])
 
-    delta_v_0_1 = -1 * np.array(
+    delta_v_0_1 = -1. * np.array(
         [
             0,
             0,
@@ -68,7 +70,7 @@ def calc_f_tensor(stm, stt):
     stt_rvv = stt[0:3, 3:6, 3:6]
     stt_rvr = stt[0:3, 3:6, 0:3]
 
-    stm_mult = np.matmul(inv_stm_rv, stm_rr)
+    stm_mult = -1.0 * np.matmul(inv_stm_rv, stm_rr)
 
     first = np.einsum("ijl,lk->ijk", stt_rrv, stm_mult)
     second = np.einsum("ilk,lj->ijk", stt_rvr, stm_mult)
@@ -76,6 +78,7 @@ def calc_f_tensor(stm, stt):
 
     F = 0.5 * (stt_rrr + first + second + third)
     FTensSquared = np.einsum("ijk,ilm->jklm", F, F)
+    FTensSquared = tnu.symmetrize_tensor(FTensSquared)
     FNormMax = 0
     FArgMaxMax = 0
 
@@ -196,6 +199,14 @@ for i in range(0, 20):
 # Changing ts to periods
 ts = [(x / period) for x in ts]
 
+
+print(s_0yvals[-1])
+print(m_1yvals[-1])
+print(m_2yvals[-1])
+print(m_3yvals[-1])
+
+
+
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
 
@@ -248,8 +259,9 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (1 / km)", fontsize=18)
 norms.set_yscale("log")
+norms.set_ylim(top=1.0)
 plt.show()
 
 plt.show()
