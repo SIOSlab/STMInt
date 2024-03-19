@@ -157,9 +157,9 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals, m_1yvals)
+model3.plot(xvals, np.divide(m_1yvals, 1000.0))
 model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
-model3.set_ylabel("Maximum Error (m)", fontsize=18)
+model3.set_ylabel("Maximum Error (km)", fontsize=18)
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
 error0_3 = []

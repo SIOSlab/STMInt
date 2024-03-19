@@ -122,7 +122,7 @@ _, stms, stts, ts = integrator.dynVar_int2(
 for i in range(1, len(ts)):
     tensor_norms.append(calc_e_tensor(stms[i], stts[i])[2])
 
-for i in range(0, 20):
+for i in range(0):
     # Scale of 2000km
     r = 100 * (i + 1)
     xvals.append(r)
@@ -223,7 +223,7 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 4.8))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Educated Guess")
+error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -232,7 +232,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (log 1 / m)", fontsize=18)
 norms.set_yscale("log")
-plt.ylim(1e-10, 10)
+
 plt.show()
