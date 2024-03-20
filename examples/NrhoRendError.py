@@ -15,6 +15,9 @@ transfer_time = period / 10.0
 
 x_0 = np.array([x0, 0, z0, 0, yd0, 0])
 
+# length scale for nondimensional units in km
+L = 3.85e5
+
 # Nrho Propagator
 integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
@@ -89,6 +92,7 @@ def calc_f_tensor(stm, stt):
 
     F = 0.5 * (stt_rrr + first + second + third)
     FTensSquared = np.einsum("ijk,ilm->jklm", F, F)
+    FTensSquared = tnu.symmetrize_tensor(FTensSquared)
     FNormMax = 0
     FArgMaxMax = 0
 
@@ -126,7 +130,7 @@ for i in range(1, len(ts)):
 
 for i in range(0, 20):
     # Scale of 200km
-    r = 10 * (i + 1)
+    r = 10 * (i + 1) / L
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -179,6 +183,18 @@ for i in range(0, 20):
     )
 
     m_3yvals.append(err(min.x))
+
+# Change normalized units to meters and seconds
+
+xvals = [(x * L) for x in xvals]
+# to km
+s_0yvals = [(x * L) for x in s_0yvals]
+m_1yvals = [(x * L) for x in m_1yvals]
+m_2yvals = [(x * L) for x in m_2yvals]
+m_3yvals = [(x * L) for x in m_3yvals]
+# to m
+tensor_norms = [(x / (L * 1000)) for x in tensor_norms]   
+
 
 # Changing ts to periods
 ts = [(x / period) for x in ts]
@@ -235,7 +251,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / km)", fontsize=18)
+norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
 norms.set_yscale("log")
 plt.show()
 
