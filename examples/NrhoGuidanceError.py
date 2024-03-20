@@ -69,10 +69,9 @@ def calc_e_tensor(stm, stt):
     inv_stm_rv = np.linalg.inv(stm_rv)
 
     E = 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
-    Eguess = np.array([1, 1, 1]) / np.linalg.norm(np.array([1, 1, 1]), ord=2)
     tensSquared = np.einsum("ijk,ilm->jklm", E, E)
-    EArgMax, ENorm = tnu.power_iteration_symmetrizing(tensSquared, Eguess, 100, 1e-9)
-
+    ENormMax = 0
+    EArgMaxMax = 0
     # try 10 different initial guesses for symmetric higher order power iteration
     for i in range(10):
         Eguess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
@@ -218,7 +217,7 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 4.8))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Educated Guess")
+error.plot(xvals, error2_3, label="Eigenvec. Eval")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -227,7 +226,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (log 1 / m)", fontsize=18)
 norms.set_yscale("log")
 
 plt.show()

@@ -236,6 +236,9 @@ for i in range(0, 20):
 
     m_3yvals.append(err(min.x))
 
+# Changing seconds to periods
+ts = [(x / period) for x in ts]
+
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
 
@@ -288,7 +291,7 @@ error.legend(fontsize=12)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (log s^2 / m)", fontsize=18)
 norms.set_yscale("log")
 plt.show()
 
