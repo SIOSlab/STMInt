@@ -173,7 +173,7 @@ for i in range(0, 20):
     # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
-            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 2000)
+            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 3000)
         )
     )
 
@@ -261,10 +261,11 @@ fig.text(
 plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
-fig2, model3 = plt.subplots(figsize=(8, 4.8))
+fig2, model3 = plt.subplots(figsize=(8, 6))
 model3.plot(xvals, m_3yvals)
 model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 model3.set_ylabel("Maximum Error (km/s)", fontsize=18)
+model3.tick_params(labelsize=14)
 
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
@@ -276,18 +277,20 @@ for i in range(len(xvals)):
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
-fig3, error = plt.subplots(figsize=(8, 4.8))
+fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
 error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
-error.legend(fontsize=12)
+error.legend(fontsize=14)
+error.tick_params(labelsize=14)
 
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (log s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
 norms.set_yscale("log")
+norms.tick_params(labelsize=14)
 plt.show()

@@ -26,7 +26,7 @@ x_f, stm, stt = integrator.dynVar_int2(
 )
 
 _, stms, stts, ts = integrator.dynVar_int2(
-    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
+    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
 )
 
 
@@ -129,8 +129,8 @@ for i in range(1, len(ts)):
 
 
 for i in range(0, 20):
-    # Scale of 200km
-    r = 10 * (i + 1) / L
+    # Scale of 500km
+    r = 25 * (i + 1) / L
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -178,7 +178,7 @@ for i in range(0, 20):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        tol=(1e-12),
+        tol=(1e-18),
         options={"disp": True},
     )
 
@@ -188,12 +188,12 @@ for i in range(0, 20):
 
 xvals = [(x * L) for x in xvals]
 # to km
-s_0yvals = [(x * L) for x in s_0yvals]
-m_1yvals = [(x * L) for x in m_1yvals]
-m_2yvals = [(x * L) for x in m_2yvals]
-m_3yvals = [(x * L) for x in m_3yvals]
+s_0yvals = [(x * L * 1000) for x in s_0yvals]
+m_1yvals = [(x * L * 1000) for x in m_1yvals]
+m_2yvals = [(x * L * 1000) for x in m_2yvals]
+m_3yvals = [(x * L * 1000) for x in m_3yvals]
 # to m
-tensor_norms = [(x / (L * 1000)) for x in tensor_norms]   
+tensor_norms = [(x / (L * 1000)) for x in tensor_norms]
 
 
 # Changing ts to periods
@@ -224,10 +224,11 @@ fig.text(
 plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
-fig2, model3 = plt.subplots(figsize=(8, 4.8))
+fig2, model3 = plt.subplots(figsize=(8, 6))
 model3.plot(xvals, m_3yvals)
 model3.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
-model3.set_ylabel("Maximum Error (km)", fontsize=18)
+model3.set_ylabel("Maximum Error (m)", fontsize=18)
+model3.tick_params(labelsize=14)
 
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
@@ -239,20 +240,23 @@ for i in range(len(xvals)):
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
-fig3, error = plt.subplots(figsize=(8, 4.8))
+fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
 error.plot(xvals, error2_3, label="Eigenvec. Eval.")
-error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
+error.set_xlabel("Radius of Relative Initial Position (m)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
-error.legend(fontsize=12)
+error.legend(fontsize=14)
+error.tick_params(labelsize=14)
 
-fig4, norms = plt.subplots(figsize=(8, 4.8))
+fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
 norms.set_yscale("log")
+norms.tick_params(labelsize=14)
+
 plt.show()
 
 plt.show()

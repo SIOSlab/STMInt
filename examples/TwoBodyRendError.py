@@ -10,15 +10,13 @@ from scipy.optimize import least_squares
 
 
 def calc_error(stm, transfer_time, x_0, perturbation):
-
-
     iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
     r_f_ref = np.array([*iss_reference_orbit.r.value])
 
     delta_r_0 = np.array([*perturbation, 0, 0, 0])
 
-    delta_v_0_1 = -1. * np.array(
+    delta_v_0_1 = -1.0 * np.array(
         [
             0,
             0,
@@ -133,7 +131,7 @@ F1, F1ArgMax, F1Norm = calc_f_tensor(stm, stt)
 tensor_norms = []
 
 _, stms, stts, ts = integrator.dynVar_int2(
-    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
+    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
 )
 
 for i in range(1, len(ts)):
@@ -141,8 +139,8 @@ for i in range(1, len(ts)):
 
 
 for i in range(0, 20):
-    # Scale of 200km
-    r = 10 * (i + 1)
+    # Scale of 500km
+    r = 25 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -199,13 +197,7 @@ for i in range(0, 20):
 # Changing ts to periods
 ts = [(x / period) for x in ts]
 
-
-print(s_0yvals[-1])
-print(m_1yvals[-1])
-print(m_2yvals[-1])
-print(m_3yvals[-1])
-
-
+tensor_norms = [(x / (1000)) for x in tensor_norms]
 
 # Plotting each method in single graph
 plt.style.use("seaborn-v0_8-darkgrid")
@@ -254,12 +246,12 @@ error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
-error.legend(fontsize=12)
+error.legend(fontsize=14)
 
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / km)", fontsize=18)
+norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
 norms.set_yscale("log")
 norms.set_ylim(top=1.0)
 plt.show()
