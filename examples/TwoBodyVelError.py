@@ -19,7 +19,7 @@ def calc_error(integrator, stm, transfer_time, r_f, x_0, perturbation):
         x_0[:3],
         (delta_v_0_1 + x_0[3:]),
         (r_f + delta_r_f_star),
-        transfer_time,
+        transfer_time, stm,
         10e-12,
     )
 
@@ -91,7 +91,7 @@ def calc_e_prime_tensor(e_tens, stm):
 
 
 def newton_root_velocity(
-    integrator, r_0, v_n, r_f, transfer_time, tolerance, termination_limit=100
+    integrator, r_0, v_n, r_f, transfer_time, stm_n, tolerance, termination_limit=100
 ):
     x_0_guess = np.hstack((r_0, v_n))
     r_f_n = (
@@ -110,7 +110,7 @@ def newton_root_velocity(
     elif np.linalg.norm(residual) <= tolerance:
         return v_n
     else:
-        stm_n = integrator.dynVar_int([0, transfer_time], x_0_guess, output="final")[1]
+        #stm_n = integrator.dynVar_int([0, transfer_time], x_0_guess, output="final")[1]
 
         delta_v_0_n = np.matmul(np.linalg.inv(stm_n[0:3, 3:6]), residual)
 
@@ -121,7 +121,7 @@ def newton_root_velocity(
             r_0,
             v_0_n_1,
             r_f,
-            transfer_time,
+            transfer_time, stm_n,
             tolerance,
             termination_limit - 1,
         )
@@ -143,7 +143,7 @@ iss_orbit = Orbit.from_classical(body.Earth, a, ecc, inc, raan, argp, nu)
 x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
 period = iss_orbit.period.to(u.s).value
-transfer_time = period * 0.4
+transfer_time = period * 0.1
 
 iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
@@ -179,14 +179,14 @@ for i in range(1, len(ts)):
 
 
 for i in range(0, 20):
-    # Scale of 2000km
-    r = 100 * (i + 1)
+    # Scale of 200km
+    r = 10 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
     s_0yvals.append(
         calc_sphere_max_error(
-            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 2000)
+            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 3000)
         )
     )
 
@@ -283,7 +283,8 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+#below 10^-7 level
+#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -293,7 +294,7 @@ error.tick_params(labelsize=14)
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (km s)^-1", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 

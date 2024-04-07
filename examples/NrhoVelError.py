@@ -16,14 +16,14 @@ period = 1.5111111111111111111111111111111111111111
 
 L = 3.85e5
 V = 1.025
-T = 2.361e6
+T = 2.361e6 / 2. / np.pi
 
 x_0 = np.array([x0, 0, z0, 0, yd0, 0])
 
 # Nrho Propagator
 integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
-transfer_time = period * 0.4
+transfer_time = period * 0.1
 
 x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
 r_f = x_f[:3]
@@ -39,8 +39,8 @@ def calc_error(integrator, stm, transfer_time, r_f, x_0, perturbation):
         x_0[:3],
         (delta_v_0_1 + x_0[3:]),
         (r_f + delta_r_f_star),
-        transfer_time,
-        10e-12,
+        transfer_time, stm,
+        10e-16,
     )
 
     return np.linalg.norm((x_0[3:] + delta_v_0_1) - v_0_newton, ord=2)
@@ -72,20 +72,7 @@ def calc_e_tensor(stm, stt):
     inv_stm_rv = np.linalg.inv(stm_rv)
 
     E = 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
-    tensSquared = np.einsum("ijk,ilm->jklm", E, E)
-    ENormMax = 0
-    EArgMaxMax = 0
-    # try 10 different initial guesses for symmetric higher order power iteration
-    for i in range(10):
-        Eguess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
-        Eguess = Eguess / np.linalg.norm(Eguess, ord=2)
-        EArgMax, ENorm = tnu.power_iteration_symmetrizing(
-            tensSquared, Eguess, 100, 1e-9
-        )
-        if ENorm > ENormMax:
-            ENormMax = ENorm
-            EArgMaxMax = EArgMax
-    return E, EArgMaxMax, ENormMax
+    return E
 
 
 def calc_e_prime_tensor(e_tens, stm):
@@ -111,12 +98,13 @@ def calc_e_prime_tensor(e_tens, stm):
 
 
 def newton_root_velocity(
-    integrator, r_0, v_n, r_f, transfer_time, tolerance, termination_limit=100
+    integrator, r_0, v_n, r_f, transfer_time, stm_n, tolerance, termination_limit=100
 ):
     x_0_guess = np.hstack((r_0, v_n))
-    x_f_n, stm_n, _ = integrator.dynVar_int2(
-        [0, transfer_time], x_0_guess, output="final"
-    )
+    #x_f_n, stm_n, _ = integrator.dynVar_int2(
+    #    [0, transfer_time], x_0_guess, output="final"
+    #)
+    x_f_n = integrator.dyn_int([0, transfer_time], x_0_guess, output="final").y[:,-1]
     r_f_n = x_f_n[:3]
     residual = r_f_n - r_f
     if termination_limit == 0:
@@ -133,7 +121,7 @@ def newton_root_velocity(
             r_0,
             v_0_n_1,
             r_f,
-            transfer_time,
+            transfer_time, stm_n,
             tolerance,
             termination_limit - 1,
         )
@@ -149,10 +137,10 @@ m_3yvals = []
 xvals = []
 
 _, stms, stts, ts = integrator.dynVar_int2(
-    [0, 2 * period], x_0, max_step=(transfer_time) / 100.0, output="all"
+    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
 )
 
-E1 = calc_e_tensor(stm, stt)[0]
+E1 = calc_e_tensor(stm, stt)
 E1prime, E1primeArgMax, E1primeNorm = calc_e_prime_tensor(E1, stm)
 
 # Tensor Norm Calculations
@@ -162,7 +150,7 @@ tensor_norms = []
 
 for i in range(1, len(ts)):
     tensor_norms.append(
-        calc_e_prime_tensor(calc_e_tensor(stms[i], stts[i])[0], stms[i])[2]
+        calc_e_prime_tensor(calc_e_tensor(stms[i], stts[i]), stms[i])[2]
     )
 
 for i in range(0, 20):
@@ -177,23 +165,6 @@ for i in range(0, 20):
         )
     )
 
-    """ Additional max errors for more samples
-    s_1yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 2000)
-        )
-    )
-    s_2yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 3000)
-        )
-    )
-    s_3yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 4000)
-        )
-    )
-    """
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(pow(r, 2) * np.sqrt(E1primeNorm))
 
@@ -217,7 +188,7 @@ for i in range(0, 20):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        tol=(1e-12),
+        tol=(1e-16),
         options={"disp": True},
     )
 
@@ -230,7 +201,7 @@ s_0yvals = [(x * V) for x in s_0yvals]
 m_1yvals = [(x * V) for x in m_1yvals]
 m_2yvals = [(x * V) for x in m_2yvals]
 m_3yvals = [(x * V) for x in m_3yvals]
-tensor_norms = [((x * (T**2)) / (L * 1000)) for x in tensor_norms]
+tensor_norms = [(x / (L) / T) for x in tensor_norms]
 
 # Change integrator time-step to periods
 
@@ -280,7 +251,8 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+#below 10^-5 level
+#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -290,7 +262,7 @@ error.tick_params(labelsize=14)
 fig4, norms = plt.subplots(figsize=(8, 4.8))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (km s)^-1", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 plt.show()

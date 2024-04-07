@@ -96,7 +96,7 @@ def calc_f_tensor(stm, stt):
     FNormMax = 0
     FArgMaxMax = 0
 
-    for i in range(10):
+    for i in range(100):
         FGuess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
         FGuess = FGuess / np.linalg.norm(FGuess, ord=2)
         FArgMax, FNorm = tnu.power_iteration_symmetrizing(
@@ -130,7 +130,7 @@ for i in range(1, len(ts)):
 
 for i in range(0, 20):
     # Scale of 500km
-    r = 25 * (i + 1) / L
+    r = 100 * (i + 1) / L
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -188,12 +188,12 @@ for i in range(0, 20):
 
 xvals = [(x * L) for x in xvals]
 # to km
-s_0yvals = [(x * L * 1000) for x in s_0yvals]
-m_1yvals = [(x * L * 1000) for x in m_1yvals]
-m_2yvals = [(x * L * 1000) for x in m_2yvals]
-m_3yvals = [(x * L * 1000) for x in m_3yvals]
+s_0yvals = [(x * L) for x in s_0yvals]
+m_1yvals = [(x * L) for x in m_1yvals]
+m_2yvals = [(x * L) for x in m_2yvals]
+m_3yvals = [(x * L) for x in m_3yvals]
 # to m
-tensor_norms = [(x / (L * 1000)) for x in tensor_norms]
+tensor_norms = [(x / (L)) for x in tensor_norms]
 
 
 # Changing ts to periods
@@ -227,7 +227,7 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 fig2, model3 = plt.subplots(figsize=(8, 6))
 model3.plot(xvals, m_3yvals)
 model3.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
-model3.set_ylabel("Maximum Error (m)", fontsize=18)
+model3.set_ylabel("Maximum Error (km)", fontsize=18)
 model3.tick_params(labelsize=14)
 
 
@@ -243,8 +243,9 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval.")
-error.set_xlabel("Radius of Relative Initial Position (m)", fontsize=18)
+#below 10^-5 level
+#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=14)
@@ -253,7 +254,7 @@ error.tick_params(labelsize=14)
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (km^-1)", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 

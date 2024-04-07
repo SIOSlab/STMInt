@@ -16,14 +16,14 @@ period = 1.5111111111111111111111111111111111111111
 
 L = 3.85e5
 V = 1.025
-T = 2.361e6
+T = 2.361e6 / 2. / np.pi
 
 x_0 = np.array([x0, 0, z0, 0, yd0, 0])
 
 # Nrho Propagator
 integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
-transfer_time = period * 0.4
+transfer_time = period * 0.1
 
 x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
 r_f = x_f[:3]
@@ -218,7 +218,8 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval")
+#below 10^-7 level
+#error.plot(xvals, error2_3, label="Eigenvec. Eval")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -228,7 +229,7 @@ error.tick_params(labelsize=14)
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (km^-1)", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 

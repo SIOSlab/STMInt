@@ -86,7 +86,7 @@ x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
 period = iss_orbit.period.to(u.s).value
 
-transfer_time = period * 0.4
+transfer_time = period * 0.1
 
 iss_reference_orbit = iss_orbit.propagate(transfer_time * u.s)
 
@@ -123,8 +123,8 @@ for i in range(1, len(ts)):
     tensor_norms.append(calc_e_tensor(stms[i], stts[i])[2])
 
 for i in range(0, 20):
-    # Scale of 2000km
-    r = 100 * (i + 1)
+    # Scale of 200km
+    r = 10 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -224,7 +224,8 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling")
 error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+#below 10^-7 level
+#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -234,7 +235,7 @@ error.tick_params(labelsize=14)
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:])
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
-norms.set_ylabel("Tensor Norm (1 / m)", fontsize=18)
+norms.set_ylabel("Tensor Norm (km^-1)", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 

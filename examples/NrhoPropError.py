@@ -38,7 +38,7 @@ for i in range(1, len(ts)):
 
 L = 3.85e5  # Distance (km)
 V = 1.025  # Velocity (km / s)
-T = 2.361e6  # Time (Orbital period)
+T = 2.361e6 / 2. / np.pi  # Time (Orbital period)
 
 
 def calc_error(stm, transfer_time, r_f, x_0, perturbation):
