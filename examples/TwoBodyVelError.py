@@ -265,9 +265,9 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, m_3yvals)
+model3.plot(xvals, np.array(m_3yvals) * 1e6)
 model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
-model3.set_ylabel("Maximum Error (km/s)", fontsize=18)
+model3.set_ylabel("Maximum Error (mm/s)", fontsize=18)
 model3.tick_params(labelsize=14)
 
 

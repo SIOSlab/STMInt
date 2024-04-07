@@ -207,9 +207,9 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, m_3yvals)
+model3.plot(xvals, np.array(m_3yvals) * 1000)
 model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
-model3.set_ylabel("Maximum Error (km)", fontsize=18)
+model3.set_ylabel("Maximum Error (m)", fontsize=18)
 model3.tick_params(labelsize=14)
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
