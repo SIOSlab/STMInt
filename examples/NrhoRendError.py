@@ -49,7 +49,8 @@ def calc_error(integrator, stm, transfer_time, r_f, x_0, perturbation):
 
     y_0 = x_0 + delta_r_0 + delta_v_0_1
 
-    r_f_lin = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    #r_f_lin = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    r_f_lin = integrator.dyn_int([0, transfer_time], y_0).y[:3,-1]
 
     return np.linalg.norm(r_f_lin - r_f, ord=2)
 
@@ -136,7 +137,7 @@ for i in range(0, 20):
     # Sampling Method with different number of samples.
     s_0yvals.append(
         calc_sphere_max_error(
-            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 200)
+            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
@@ -161,10 +162,15 @@ for i in range(0, 20):
     m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
 
     # Method 2: Making an educated guess at the maximum error.
-    m_2yvals.append(calc_error(integrator, stm, transfer_time, r_f, x_0, r * F1ArgMax))
+    err_eval1 = calc_error(integrator, stm, transfer_time, r_f, x_0, r * F1ArgMax)
+    err_eval2 = calc_error(integrator, stm, transfer_time, r_f, x_0, -1. * r * F1ArgMax)
+    m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
-    initial_guess = np.array([*(F1ArgMax * r)])
+    if err_eval1 > err_eval2:
+        initial_guess = np.array([*(F1ArgMax * r)])
+    else:
+        initial_guess = np.array([*(-1. * F1ArgMax * r)])
 
     err = lambda pert: calc_error(integrator, stm, transfer_time, r_f, x_0, pert)
     objective = lambda dr_0: -1.0 * err(dr_0)

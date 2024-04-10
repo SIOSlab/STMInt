@@ -155,10 +155,15 @@ for i in range(0, 20):
     m_1yvals.append(pow(r, 2) * np.sqrt(E1Norm))
 
     # Method 2: Making an educated guess at the maximum error.
-    m_2yvals.append(calc_error(stm, transfer_time, r_f, x_0, r * E1ArgMax))
+    err_eval1 = calc_error(stm, transfer_time, r_f, x_0, r * E1ArgMax)
+    err_eval2 = calc_error(stm, transfer_time, r_f, x_0, -1. * r * E1ArgMax)
+    m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
-    initial_guess = np.array([*(E1ArgMax * r)])
+    if err_eval1 > err_eval2:
+        initial_guess = np.array([*(E1ArgMax * r)])
+    else:
+        initial_guess = np.array([*(-1. * E1ArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, r_f, x_0, pert)
     objective = lambda dr_f: -1.0 * err(dr_f)

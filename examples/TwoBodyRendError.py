@@ -80,7 +80,7 @@ def calc_f_tensor(stm, stt):
     FNormMax = 0
     FArgMaxMax = 0
 
-    for i in range(10):
+    for i in range(20):
         FGuess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
         FGuess = FGuess / np.linalg.norm(FGuess, ord=2)
         FArgMax, FNorm = tnu.power_iteration_symmetrizing(
@@ -146,7 +146,7 @@ for i in range(0, 20):
     # Sampling Method with different number of samples.
     s_0yvals.append(
         calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 1000)
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
@@ -171,10 +171,15 @@ for i in range(0, 20):
     m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
 
     # Method 2: Making an educated guess at the maximum error.
-    m_2yvals.append(calc_error(stm, transfer_time, x_0, r * F1ArgMax))
+    err_eval1 = calc_error(stm, transfer_time, x_0, r * F1ArgMax)
+    err_eval2 = calc_error(stm, transfer_time, x_0, -1. * r * F1ArgMax)
+    m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
-    initial_guess = np.array([*(F1ArgMax * r)])
+    if err_eval1 > err_eval2:
+        initial_guess = np.array([*(F1ArgMax * r)])
+    else:
+        initial_guess = np.array([*(-1. * F1ArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, x_0, pert)
     objective = lambda dr_0: -1.0 * err(dr_0)
