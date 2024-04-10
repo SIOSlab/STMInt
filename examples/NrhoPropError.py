@@ -46,7 +46,8 @@ def calc_error(stm, transfer_time, r_f, x_0, perturbation):
 
     y_0 = x_0 + delta_x_0
 
-    r_f_pert = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    #r_f_pert = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    r_f_pert = integrator.dyn_int([0, transfer_time], y_0).y[:3,-1]
 
     return np.linalg.norm(((r_f_pert - r_f) - np.matmul(stm, delta_x_0)[:3]), ord=2)
 
@@ -87,7 +88,7 @@ for i in range(0, 20):
     # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 1000)
+            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
