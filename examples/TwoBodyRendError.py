@@ -140,7 +140,7 @@ for i in range(1, len(ts)):
 
 for i in range(0, 20):
     # Scale of 50km
-    r = 10. * (i + 1)
+    r = 10.0 * (i + 1)
     xvals.append(r)
 
     # Sampling Method with different number of samples.
@@ -172,14 +172,14 @@ for i in range(0, 20):
 
     # Method 2: Making an educated guess at the maximum error.
     err_eval1 = calc_error(stm, transfer_time, x_0, r * F1ArgMax)
-    err_eval2 = calc_error(stm, transfer_time, x_0, -1. * r * F1ArgMax)
+    err_eval2 = calc_error(stm, transfer_time, x_0, -1.0 * r * F1ArgMax)
     m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
     if err_eval1 > err_eval2:
         initial_guess = np.array([*(F1ArgMax * r)])
     else:
-        initial_guess = np.array([*(-1. * F1ArgMax * r)])
+        initial_guess = np.array([*(-1.0 * F1ArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, x_0, pert)
     objective = lambda dr_0: -1.0 * err(dr_0)
@@ -205,7 +205,7 @@ ts = [(x / period) for x in ts]
 tensor_norms = [(x / (1000)) for x in tensor_norms]
 
 # Plotting each method in single graph
-plt.style.use("seaborn-v0_8-darkgrid")
+plt.style.use("seaborn-v0_8-colorblind")
 
 fig, axs = plt.subplots(4, sharex=True)
 axs[1].plot(xvals, s_0yvals)
@@ -230,7 +230,7 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, m_3yvals)
+model3.plot(xvals, m_3yvals, linewidth=4)
 model3.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 model3.set_ylabel("Maximum Error (km)", fontsize=18)
 
@@ -245,21 +245,22 @@ for i in range(len(xvals)):
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
 fig3, error = plt.subplots(figsize=(8, 6))
-error.plot(xvals, error0_3, label="Sampling")
-error.plot(xvals, error1_3, label="Tensor Norm")
-#below 10^-5 level
-#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.plot(xvals, error0_3, label="Sampling", linewidth=4)
+error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
+# below 10^-5 level
+# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=14)
 
 fig4, norms = plt.subplots(figsize=(8, 6))
-norms.plot(ts[21:], tensor_norms[20:])
+norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (km^-1)", fontsize=18)
 norms.set_yscale("log")
 norms.set_ylim(top=1.0)
-plt.show()
 
-plt.show()
+fig2.savefig("figures/Rend/twoBodyRendOpt.png")
+fig3.savefig("figures/Rend/twoBodyRendError.png")
+fig4.savefig("figures/Rend/twoBodyRendTNorms.png")

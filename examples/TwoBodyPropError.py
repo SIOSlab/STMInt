@@ -161,7 +161,7 @@ tensor_norms = [x / 1000.0 for x in tensor_norms]
 ts = [(x / period) for x in ts]
 
 # Plotting each method in single graph
-plt.style.use("seaborn-v0_8-darkgrid")
+plt.style.use("seaborn-v0_8-colorblind")
 
 fig, axs = plt.subplots(4, sharex=True)
 axs[1].plot(xvals, s_0yvals)
@@ -186,7 +186,7 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, m_1yvals)
+model3.plot(xvals, m_1yvals, linewidth=4)
 model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
 model3.set_ylabel("Maximum Error (m)", fontsize=18)
 model3.tick_params(labelsize=14)
@@ -202,9 +202,9 @@ for i in range(len(xvals)):
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
 fig3, error = plt.subplots(figsize=(8, 6))
-error.plot(xvals, error0_3, label="Sampling")
-error.plot(xvals, error1_3, label="Tensor Norm")
-error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.plot(xvals, error0_3, label="Sampling", linewidth=4)
+error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
+error.plot(xvals, error2_3, label="Eigenvec. Eval.", linewidth=4)
 error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
@@ -212,10 +212,11 @@ error.legend(fontsize=14)
 error.tick_params(labelsize=14)
 
 fig4, norms = plt.subplots(figsize=(8, 6))
-norms.plot(ts[21:], tensor_norms[20:])
+norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
 norms.tick_params(labelsize=14)
 
-
-plt.show()
+fig2.savefig("figures/Prop/twoBodyPropOpt.png")
+fig3.savefig("figures/Prop/twoBodyPropError.png")
+fig4.savefig("figures/Prop/twoBodyPropTNorms.png")

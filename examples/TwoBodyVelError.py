@@ -19,7 +19,8 @@ def calc_error(integrator, stm, transfer_time, r_f, x_0, perturbation):
         x_0[:3],
         (delta_v_0_1 + x_0[3:]),
         (r_f + delta_r_f_star),
-        transfer_time, stm,
+        transfer_time,
+        stm,
         10e-12,
     )
 
@@ -110,7 +111,7 @@ def newton_root_velocity(
     elif np.linalg.norm(residual) <= tolerance:
         return v_n
     else:
-        #stm_n = integrator.dynVar_int([0, transfer_time], x_0_guess, output="final")[1]
+        # stm_n = integrator.dynVar_int([0, transfer_time], x_0_guess, output="final")[1]
 
         delta_v_0_n = np.matmul(np.linalg.inv(stm_n[0:3, 3:6]), residual)
 
@@ -121,7 +122,8 @@ def newton_root_velocity(
             r_0,
             v_0_n_1,
             r_f,
-            transfer_time, stm_n,
+            transfer_time,
+            stm_n,
             tolerance,
             termination_limit - 1,
         )
@@ -212,14 +214,16 @@ for i in range(0, 20):
 
     # Method 2: Making an educated guess at the maximum error.
     err_eval1 = calc_error(integrator, stm, transfer_time, r_f, x_0, r * E1primeArgMax)
-    err_eval2 = calc_error(integrator, stm, transfer_time, r_f, x_0, -1. * r * E1primeArgMax)
+    err_eval2 = calc_error(
+        integrator, stm, transfer_time, r_f, x_0, -1.0 * r * E1primeArgMax
+    )
     m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
     if err_eval1 > err_eval2:
         initial_guess = np.array([*(E1primeArgMax * r)])
     else:
-        initial_guess = np.array([*(-1. * E1primeArgMax * r)])
+        initial_guess = np.array([*(-1.0 * E1primeArgMax * r)])
 
     err = lambda pert: calc_error(integrator, stm, transfer_time, r_f, x_0, pert)
     objective = lambda dr_f: -1.0 * err(dr_f)
@@ -243,7 +247,7 @@ for i in range(0, 20):
 ts = [(x / period) for x in ts]
 
 # Plotting each method in single graph
-plt.style.use("seaborn-v0_8-darkgrid")
+plt.style.use("seaborn-v0_8-colorblind")
 
 fig, axs = plt.subplots(4, sharex=True)
 axs[1].plot(xvals, s_0yvals)
@@ -268,7 +272,7 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, np.array(m_3yvals) * 1e6)
+model3.plot(xvals, np.array(m_3yvals) * 1e6, linewidth=4)
 model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 model3.set_ylabel("Maximum Error (mm/s)", fontsize=18)
 model3.tick_params(labelsize=14)
@@ -284,21 +288,25 @@ for i in range(len(xvals)):
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
 fig3, error = plt.subplots(figsize=(8, 6))
-error.plot(xvals, error0_3, label="Sampling")
-error.plot(xvals, error1_3, label="Tensor Norm")
-#below 10^-7 level
-#error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.plot(xvals, error0_3, label="Sampling", linewidth=4)
+error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
+# below 10^-7 level
+# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=14)
 error.tick_params(labelsize=14)
 
+
 fig4, norms = plt.subplots(figsize=(8, 6))
-norms.plot(ts[21:], tensor_norms[20:])
+norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (km s)^-1", fontsize=18)
 norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 
-plt.show()
+
+fig2.savefig("figures/Vel/twoBodyVelOpt.png")
+fig3.savefig("figures/Vel/twoBodyVelError.png")
+fig4.savefig("figures/Vel/twoBodyVelTNorms.png")
