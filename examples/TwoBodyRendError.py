@@ -254,12 +254,16 @@ error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=14)
 
+xvals = np.array([0, 0.25, 0.5, 0.75, 1])
+xlabels = ["0", "1/4", "1/2", "3/4", "1"]
+
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (km^-1)", fontsize=18)
 norms.set_yscale("log")
 norms.set_ylim(top=1.0)
+norms.set_xticks(xvals, xlabels, fontsize=14)
 
 fig2.savefig("figures/Rend/twoBodyRendOpt.png")
 fig3.savefig("figures/Rend/twoBodyRendError.png")

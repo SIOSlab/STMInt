@@ -211,11 +211,16 @@ error.set_yscale("log")
 error.legend(fontsize=14)
 error.tick_params(labelsize=14)
 
+xvals = np.array([0, 0.25, 0.5, 0.75, 1])
+xlabels = ["0", "1/4", "1/2", "3/4", "1"]
+
 fig4, norms = plt.subplots(figsize=(8, 6))
 norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
 norms.set_xlabel("Time of Flight (periods)", fontsize=18)
 norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
 norms.tick_params(labelsize=14)
+norms.set_xticks(xvals, xlabels, fontsize=14)
+norms.set_xticks(xvals, xlabels, fontsize=14)
 
 fig2.savefig("figures/Prop/twoBodyPropOpt.png")
 fig3.savefig("figures/Prop/twoBodyPropError.png")
