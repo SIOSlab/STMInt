@@ -11,36 +11,48 @@ x0 = 1.02202151273581740824714855590570360
 z0 = 0.182096761524240501132977765539282777
 yd0 = -0.103256341062793815791764364248006121
 period = 1.5111111111111111111111111111111111111111
-
-# Dimensionalized Unit Conversion (Koon Lo Marsden pg. 25, Earth-Moon)
-
-L = 3.85e5
-V = 1.025
-T = 2.361e6 / 2.0 / np.pi
+transfer_time = period / 10.0
 
 x_0 = np.array([x0, 0, z0, 0, yd0, 0])
+
+# length scale for nondimensional units in km
+L = 3.85e5
 
 # Nrho Propagator
 integrator = STMint(preset="threeBody", preset_mult=mu, variational_order=2)
 
-transfer_time = period * 0.1
+x_f, stm, stt = integrator.dynVar_int2(
+    [0, transfer_time], x_0, max_step=(transfer_time) / 100.0, output="final"
+)
 
-x_f, stm, stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")
+_, stms, stts, ts = integrator.dynVar_int2(
+    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
+)
+
+
 r_f = x_f[:3]
 
 
-def calc_error(stm, transfer_time, r_f, x_0, perturbation):
-    delta_r_f_star = perturbation
+def calc_error(integrator, stm, transfer_time, r_f, x_0, perturbation):
+    delta_r_0 = np.array([*perturbation, 0, 0, 0])
 
-    delta_v_0_1 = np.matmul(np.linalg.inv(stm[0:3, 3:6]), delta_r_f_star)
+    delta_v_0_1 = -1 * np.array(
+        [
+            0,
+            0,
+            0,
+            *np.matmul(
+                np.linalg.inv(stm[0:3, 3:6]), np.matmul(stm[0:3, 0:3], perturbation)
+            ),
+        ]
+    )
 
-    y_0 = x_0 + np.array([0, 0, 0, *delta_v_0_1])
+    y_0 = x_0 + delta_r_0 + delta_v_0_1
 
-    r_f_1 = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    # r_f_lin = integrator.dynVar_int2([0, transfer_time], y_0, output="final")[0][:3]
+    r_f_lin = integrator.dyn_int([0, transfer_time], y_0).y[:3, -1]
 
-    delta_r_f_1 = r_f_1 - r_f
-
-    return np.linalg.norm(delta_r_f_star - delta_r_f_1, ord=2)
+    return np.linalg.norm(r_f_lin - r_f, ord=2)
 
 
 def normalize_sphere_samples(r, n):
@@ -54,35 +66,48 @@ def normalize_sphere_samples(r, n):
     return normalized_samples
 
 
-def calc_sphere_max_error(stm, transfer_time, r_f, x_0, normalized_samples):
+def calc_sphere_max_error(integrator, stm, transfer_time, r_f, x_0, normalized_samples):
     errors = []
 
     for sample in normalized_samples:
-        errors.append(calc_error(stm, transfer_time, r_f, x_0, sample))
+        errors.append(calc_error(integrator, stm, transfer_time, r_f, x_0, sample))
 
     return np.max(errors)
 
 
-def calc_e_tensor(stm, stt):
+def calc_f_tensor(stm, stt):
+    stm_rr = stm[0:3, 0:3]
     stm_rv = stm[0:3, 3:6]
-    stt_rvv = stt[0:3, 3:6, 3:6]
     inv_stm_rv = np.linalg.inv(stm_rv)
 
-    E = 0.5 * np.einsum("ilm,lj,mk->ijk", stt_rvv, inv_stm_rv, inv_stm_rv)
-    tensSquared = np.einsum("ijk,ilm->jklm", E, E)
-    ENormMax = 0
-    EArgMaxMax = 0
-    # try 10 different initial guesses for symmetric higher order power iteration
-    for i in range(10):
-        Eguess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
-        Eguess = Eguess / np.linalg.norm(Eguess, ord=2)
-        EArgMax, ENorm = tnu.power_iteration_symmetrizing(
-            tensSquared, Eguess, 100, 1e-9
+    stt_rrr = stt[0:3, 0:3, 0:3]
+    stt_rrv = stt[0:3, 0:3, 3:6]
+    stt_rvv = stt[0:3, 3:6, 3:6]
+    stt_rvr = stt[0:3, 3:6, 0:3]
+
+    stm_mult = -1.0 * np.matmul(inv_stm_rv, stm_rr)
+
+    first = np.einsum("ijl,lk->ijk", stt_rrv, stm_mult)
+    second = np.einsum("ilk,lj->ijk", stt_rvr, stm_mult)
+    third = np.einsum("ilp,lj,pk->ijk", stt_rvv, stm_mult, stm_mult)
+
+    F = 0.5 * (stt_rrr + first + second + third)
+    FTensSquared = np.einsum("ijk,ilm->jklm", F, F)
+    FTensSquared = tnu.symmetrize_tensor(FTensSquared)
+    FNormMax = 0
+    FArgMaxMax = 0
+
+    for i in range(100):
+        FGuess = np.random.multivariate_normal([0, 0, 0], np.identity(3), 1)[0]
+        FGuess = FGuess / np.linalg.norm(FGuess, ord=2)
+        FArgMax, FNorm = tnu.power_iteration_symmetrizing(
+            FTensSquared, FGuess, 100, 1e-9
         )
-        if ENorm > ENormMax:
-            ENormMax = ENorm
-            EArgMaxMax = EArgMax
-    return E, EArgMaxMax, ENormMax
+        if FNorm > FNormMax:
+            FNormMax = FNorm
+            FArgMaxMax = FArgMax
+
+    return F, FArgMaxMax, FNormMax
 
 
 s_0yvals = []
@@ -94,28 +119,25 @@ m_2yvals = []
 m_3yvals = []
 xvals = []
 
-E1, E1ArgMax, E1Norm = calc_e_tensor(stm, stt)
+F1, F1ArgMax, F1Norm = calc_f_tensor(stm, stt)
 
 # Tensor Norm Calculations
 
 tensor_norms = []
 
-_, stms, stts, ts = integrator.dynVar_int2(
-    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
-)
-
 for i in range(1, len(ts)):
-    tensor_norms.append(calc_e_tensor(stms[i], stts[i])[2])
+    tensor_norms.append(calc_f_tensor(stms[i], stts[i])[2])
+
 
 for i in range(0, 20):
-    # Scale of 2000km
-    r = 100.0 * (i + 1) / L
+    # Scale of 500km
+    r = 100 * (i + 1) / L
     xvals.append(r)
 
-    # Method 0: Sampling
+    # Sampling Method with different number of samples.
     s_0yvals.append(
         calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 5000)
+            integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
@@ -137,24 +159,26 @@ for i in range(0, 20):
     )
     """
     # Method 1: Analytical method for calculating maximum error
-    m_1yvals.append(pow(r, 2) * np.sqrt(E1Norm))
+    m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
 
     # Method 2: Making an educated guess at the maximum error.
-    err_eval1 = calc_error(stm, transfer_time, r_f, x_0, r * E1ArgMax)
-    err_eval2 = calc_error(stm, transfer_time, r_f, x_0, -1.0 * r * E1ArgMax)
+    err_eval1 = calc_error(integrator, stm, transfer_time, r_f, x_0, r * F1ArgMax)
+    err_eval2 = calc_error(
+        integrator, stm, transfer_time, r_f, x_0, -1.0 * r * F1ArgMax
+    )
     m_2yvals.append(max(err_eval1, err_eval2))
 
     # Method 3: Least Squares Error Maximization
     if err_eval1 > err_eval2:
-        initial_guess = np.array([*(E1ArgMax * r)])
+        initial_guess = np.array([*(F1ArgMax * r)])
     else:
-        initial_guess = np.array([*(-1.0 * E1ArgMax * r)])
+        initial_guess = np.array([*(-1.0 * F1ArgMax * r)])
 
-    err = lambda pert: calc_error(stm, transfer_time, r_f, x_0, pert)
-    objective = lambda dr_f: -1.0 * err(dr_f)
+    err = lambda pert: calc_error(integrator, stm, transfer_time, r_f, x_0, pert)
+    objective = lambda dr_0: -1.0 * err(dr_0)
     eq_cons = {
         "type": "eq",
-        "fun": lambda dr_f: r**2 - np.linalg.norm(dr_f, ord=2) ** 2,
+        "fun": lambda dr_0: r**2 - np.linalg.norm(dr_0, ord=2) ** 2,
     }
 
     min = scipy.optimize.minimize(
@@ -162,7 +186,7 @@ for i in range(0, 20):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        tol=1e-12,
+        tol=(1e-18),
         options={"disp": True},
     )
 
@@ -171,13 +195,16 @@ for i in range(0, 20):
 # Change normalized units to meters and seconds
 
 xvals = [(x * L) for x in xvals]
+# to km
 s_0yvals = [(x * L) for x in s_0yvals]
 m_1yvals = [(x * L) for x in m_1yvals]
 m_2yvals = [(x * L) for x in m_2yvals]
 m_3yvals = [(x * L) for x in m_3yvals]
-tensor_norms = [(x / (L * 1000)) for x in tensor_norms]
+# to m
+tensor_norms = [(x / (L)) for x in tensor_norms]
 
-# Changing normalized units to periods
+
+# Changing ts to periods
 ts = [(x / period) for x in ts]
 
 # Plotting each method in single graph
@@ -192,7 +219,7 @@ axs[2].plot(xvals, m_2yvals)
 axs[2].set_title("Method 2")
 axs[3].plot(xvals, m_3yvals)
 axs[3].set_title("Method 3")
-axs[3].set_xlabel("Radius of Relative Final Position (km)", fontsize=16)
+axs[3].set_xlabel("Radius of Relative Initial Position (km)", fontsize=16)
 fig.text(
     0.06,
     0.5,
@@ -206,10 +233,11 @@ plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
 fig2, model3 = plt.subplots(figsize=(8, 6))
-model3.plot(xvals, np.array(m_3yvals) * 1000, linewidth=4)
-model3.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
-model3.set_ylabel("Maximum Error (m)", fontsize=18)
+model3.plot(xvals, m_3yvals, linewidth=4)
+model3.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
+model3.set_ylabel("Maximum Error (km)", fontsize=18)
 model3.tick_params(labelsize=14)
+
 
 # Plotting error between methods (0, 1, and 2 with respect to 3)
 error0_3 = []
@@ -223,9 +251,9 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling", linewidth=4)
 error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
-# below 10^-7 level
-# error.plot(xvals, error2_3, label="Eigenvec. Eval")
-error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
+# below 10^-5 level
+# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
 error.legend(fontsize=14)
@@ -242,6 +270,6 @@ norms.set_yscale("log")
 norms.tick_params(labelsize=14)
 norms.set_xticks(xvals, xlabels, fontsize=14)
 
-fig2.savefig("figures/Guide/threeBodyGuideOpt.png")
-fig3.savefig("figures/Guide/threeBodyGuideError.png")
-fig4.savefig("figures/Guide/threeBodyGuideTNorms.png")
+fig2.savefig("figures/Rend/threeBodyRendOpt.png")
+fig3.savefig("figures/Rend/threeBodyRendError.png")
+fig4.savefig("figures/Rend/threeBodyRendTNorms.png")
