@@ -11,6 +11,7 @@ Welcome to STMint's documentation!
    :caption: Contents:
 
    installation
+   example
    STMint
 
 

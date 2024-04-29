@@ -1,10 +1,7 @@
 STMint package
 ==============
 
-Submodules
-----------
-
-STMint.STMint module
+STMint module
 --------------------
 
 .. automodule:: STMint.STMint
@@ -12,18 +9,10 @@ STMint.STMint module
    :undoc-members:
    :show-inheritance:
 
-STMint.TensorNormUtilities module
+TensorNormUtilities module
 ---------------------------------
 
 .. automodule:: STMint.TensorNormUtilities
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: STMint
    :members:
    :undoc-members:
    :show-inheritance:

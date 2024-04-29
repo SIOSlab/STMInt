@@ -102,9 +102,6 @@ def newton_root_velocity(
     integrator, r_0, v_n, r_f, transfer_time, stm_n, tolerance, termination_limit=100
 ):
     x_0_guess = np.hstack((r_0, v_n))
-    # x_f_n, stm_n, _ = integrator.dynVar_int2(
-    #    [0, transfer_time], x_0_guess, output="final"
-    # )
     x_f_n = integrator.dyn_int([0, transfer_time], x_0_guess, output="final").y[:, -1]
     r_f_n = x_f_n[:3]
     residual = r_f_n - r_f
@@ -258,8 +255,9 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling", linewidth=4)
 error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
-# below 10^-5 level
-# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+
+# Error 2_3 below 10^-5 level
+
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")

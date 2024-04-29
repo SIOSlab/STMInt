@@ -111,8 +111,6 @@ def newton_root_velocity(
     elif np.linalg.norm(residual) <= tolerance:
         return v_n
     else:
-        # stm_n = integrator.dynVar_int([0, transfer_time], x_0_guess, output="final")[1]
-
         delta_v_0_n = np.matmul(np.linalg.inv(stm_n[0:3, 3:6]), residual)
 
         v_0_n_1 = v_n - delta_v_0_n
@@ -185,34 +183,17 @@ for i in range(0, 20):
     r = 10 * (i + 1)
     xvals.append(r)
 
-    # Sampling Method with different number of samples.
+    # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
             integrator, stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
-    """ Additional max errors for more samples
-    s_1yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 2000)
-        )
-    )
-    s_2yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 3000)
-        )
-    )
-    s_3yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 4000)
-        )
-    )
-    """
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(pow(r, 2) * np.sqrt(E1primeNorm))
 
-    # Method 2: Making an educated guess at the maximum error.
+    # Method 2: Making an educated guess at the maximum error
     err_eval1 = calc_error(integrator, stm, transfer_time, r_f, x_0, r * E1primeArgMax)
     err_eval2 = calc_error(
         integrator, stm, transfer_time, r_f, x_0, -1.0 * r * E1primeArgMax
@@ -290,8 +271,10 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling", linewidth=4)
 error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
-# below 10^-7 level
-# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+
+# Error 2_3 below 10^-7 level
+
+
 error.set_xlabel("Radius of Relative Final Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")

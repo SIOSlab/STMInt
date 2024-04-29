@@ -13,6 +13,8 @@ sphinx-apidoc -f -o . ../STMint/
 rm modules.rst
 
 make html
-make html
+
+rm STMint.rst
+
 
 exit 0

@@ -98,30 +98,12 @@ for i in range(0, 20):
 
     sttArgMax, m_1norm = tnu.stt_2_norm(stm[:3, 3:], stt[:3, 3:, 3:])
 
-    # Sampling Method with different number of samples.
+    # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
             stm, transfer_time, x_0, normalize_sphere_samples(r, 5000)
         )
     )
-
-    """"
-    s_1yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 2000)
-        )
-    )
-    s_2yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 3000)
-        )
-    )
-    s_3yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 4000)
-        )
-    )
-    """
 
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(0.5 * pow(r, 2) * m_1norm)

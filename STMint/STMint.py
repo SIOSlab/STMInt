@@ -7,6 +7,7 @@ from astropy import units as u
 
 class STMint:
     """State Transition Matrix Integrator
+
     A tool for numerical integration of variational
     equations associated with a symbolically specified dynamical system.
 
@@ -31,7 +32,7 @@ class STMint:
                     Three body motion around the Earth and Moon.
         preset_mult (float):
             Constant multiple of potential V for 2-body motion.
-            Note: Only needed if preset = "".
+                * Note: Only needed if preset = "".
         variational_order (int):
             Order of variational equations to be computed:
                 * 0 - for no variational equations.
@@ -43,20 +44,10 @@ class STMint:
             The variables used in the symbolic integration.
         dynamics (sympy expression):
             The dynamics to be symbolically integrated.
-        variational_order (int):
-            Order of variational equations to be computed:
-                    * 0 - for no variational equations
-                    * 1 - for first order variational equations
-                    * 2 - for first and second order variational equations
-
         lambda_dynamics (lambdafied sympy expression):
             The lambdified dynamic equations.
         lambda_dynamics_and_variational (lambdafied sympy expression):
             The lambdified dynamic and variational equations.
-        jacobian (nd sympy matrix or None):
-            The jacobian of the dynamics.
-        STM (nxn sympy matrix):
-            The symbolic state transition matrix
     """
 
     def __init__(
@@ -229,12 +220,12 @@ class STMint:
                     2 - for first and second order variational equations.
         """
         if variational_order == 1 or variational_order == 2:
-            self.jacobian = self.dynamics.jacobian(self.vars.transpose())
-            self.STM = MatrixSymbol("phi", len(self.vars), len(self.vars))
-            self.variational = self.jacobian * self.STM
+            jacobian = self.dynamics.jacobian(self.vars.transpose())
+            STM = MatrixSymbol("phi", len(self.vars), len(self.vars))
+            variational = jacobian * STM
             self.lambda_dynamics_and_variational = lambdify(
-                (self.vars, self.STM),
-                Matrix.vstack(self.dynamics.transpose(), Matrix(self.variational)),
+                (self.vars, STM),
+                Matrix.vstack(self.dynamics.transpose(), Matrix(variational)),
                 "numpy",
             )
             if variational_order == 2:
@@ -246,8 +237,8 @@ class STMint:
                 )
                 lambda_hessian = lambdify(self.vars, hessian, "numpy")
 
-                self.jacobian = self.dynamics.jacobian(self.vars.transpose())
-                lambda_jacobian = lambdify(self.vars, self.jacobian, "numpy")
+                jacobian = self.dynamics.jacobian(self.vars.transpose())
+                lambda_jacobian = lambdify(self.vars, jacobian, "numpy")
 
                 lambda_dyn = lambdify(self.vars, self.dynamics, "numpy")
                 n = len(self.vars)
@@ -258,9 +249,6 @@ class STMint:
                 )
 
         else:
-            self.jacobian = None
-            self.variational = None
-            self.STM = None
             self.lambda_dynamics_and_variational = None
 
     def _secondVariationalEquations(
@@ -431,7 +419,7 @@ class STMint:
 
         Method uses _dynamicsVariationalSolver to solve an initial value
         problem with given dynamics and variational equations. This method has
-        the same arguments and Scipy's solve_ivp function.
+        the same optional arguments as Scipy's solve_ivp function.
 
         Non-optional arguments are listed below.
         See documentation of solve_ivp for a full list and description of arguments
@@ -479,7 +467,9 @@ class STMint:
                     The time steps of integration.
 
         """
-        assert self.variational != None, "Variational equations have not been created"
+        assert (
+            self.lambda_dynamics_and_variational != None
+        ), "Variational equations have not been created"
         initCon = np.vstack((np.array(y0), np.eye(len(self.vars))))
 
         solution = solve_ivp(
@@ -545,7 +535,7 @@ class STMint:
 
         Method uses _dynamicsVariationalSolver to solve an initial value
         problem with given dynamics and variational equations. This method has
-        the same arguments and Scipy's solve_ivp function. Note that this method
+        the same optional arguments as Scipy's solve_ivp function. Note that this method
         also integrates second order variational equations to obtain a second
         order state transition tensor.
 
@@ -598,7 +588,9 @@ class STMint:
                 ts (n-array):
                     The time steps of integration.
         """
-        assert self.variational != None, "Variational equations have not been created"
+        assert (
+            self.lambda_dynamics_and_variational2 != None
+        ), "Variational equations have not been created"
         init_con = np.hstack(
             (
                 np.array(y0),

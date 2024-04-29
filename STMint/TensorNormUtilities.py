@@ -34,12 +34,13 @@ def nonlin_index_inf_2(stm, stt):
         stmNorm = max(stmNorm, rowNorm)
     return sttNorm / stmNorm
 
+
 def nonlin_index_junkins_scale_free(stm, stt):
     """Function to calculate the nonlinearity index
 
     The induced 2 norm of the unfolded STT is used in this calculation
     This gives the quotient of the (Frobenius, 2)-norm of the second order STT
-    with the Frobenius norm of the STM. 
+    with the Frobenius norm of the STM.
 
      Args:
          stm (np array)
@@ -185,6 +186,7 @@ def power_iteration(tens, vecGuess, maxIter, tol):
             break
     return vec, vecNorm
 
+
 def power_iterate_symmetrizing(stringEin, tensOrder, tens, vec):
     """Function to perform one higher order power iteration on a non-symmetric tensor
 
@@ -257,13 +259,14 @@ def get_polynomial_bound(tens):
     Args:
         tens (np array)
             Tensor
-    
+
     Returns:
         K (double)
             Bound on the polynomial on the unit sphere
     """
     tensOrder = tens.ndim
-    return np.sum(np.abs(tens)) * ((tensOrder - 1.) * tensOrder)
+    return np.sum(np.abs(tens)) * ((tensOrder - 1.0) * tensOrder)
+
 
 def MM_iterate(stringEin, tensOrder, tens, K, vec):
     """Function to perform one step of polynomial optimization on a scalar valued polynomial on unit sphere
@@ -292,7 +295,7 @@ def MM_iterate(stringEin, tensOrder, tens, K, vec):
         vecNorm (float)
     """
     poly = np.einsum(stringEin, tens, *([vec] * (tensOrder - 1)))
-    vecNew = vec - 1/K * poly
+    vecNew = vec - 1 / K * poly
     vecNorm = np.linalg.norm(vecNew)
     return vecNew / vecNorm, vecNorm
 
@@ -331,7 +334,6 @@ def MM_iteration(tens, vecGuess, maxIter, tol):
     return vec, vecNorm
 
 
-
 def symmetrize_tensor(tens):
     """Symmetrize a tensor
 
@@ -356,7 +358,7 @@ def symmetrize_tensor(tens):
 def nonlin_index_2(stm, stt):
     """Function to calculate the nonlinearity index
 
-    Using tensor eigenvalues, the quotient of the induced 2-norm 
+    Using tensor eigenvalues, the quotient of the induced 2-norm
     of the STT with the 2-norm of the STM
 
     Args:
@@ -372,18 +374,15 @@ def nonlin_index_2(stm, stt):
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
     tensSquared = np.einsum(tensor_square_string(stt), stt, stt)
-    tensSquaredSym = symmetrize_tensor(tensSquared)
-    _, sttNorm = power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
+    _, sttNorm = power_iteration(tensSquared, stmVVec, 20, 1e-3)
     stmNorm = norm(stm, 2)
     return math.sqrt(sttNorm) / stmNorm
-
-
 
 
 def nonlin_index_DEMoN2(stm, stt):
     """Function to calculate the nonlinearity index
 
-    Using tensor eigenvalues, the quotient of the induced 2-norm 
+    Using tensor eigenvalues, the quotient of the induced 2-norm
     of the STT with the 2-norm of the STM
 
     Args:
@@ -396,31 +395,27 @@ def nonlin_index_DEMoN2(stm, stt):
     Returns:
         nonlinearity_index (float)
     """
-    #_, _, vh = svd(stm)
-    #stmVVec = vh[0, :]
     maxdemon = 0
     istm = np.linalg.inv(stm)
     tens = np.einsum("ilm,lj,mk->ijk", stt, istm, istm)
     tensSquared = np.einsum("ijk,ilm->jklm", tens, tens)
-    tensSquaredSym = symmetrize_tensor(tensSquared)
     for i in range(100):
         guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
-        #guess = np.array([10,1,3,1,1,.1])
         guess = guess / np.linalg.norm(guess)
-        #guess = stmVVec
-        argMax, m_1norm = power_iteration(tensSquaredSym, guess, 300, 1e-9)
+        argMax, m_1norm = power_iteration(tensSquared, guess, 300, 1e-9)
         argMax = np.matmul(istm, argMax)
         argMax = argMax / np.linalg.norm(argMax)
-        demon = np.linalg.norm(np.einsum("ijk,j,k->i", stt, argMax, argMax)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))
+        demon = np.linalg.norm(
+            np.einsum("ijk,j,k->i", stt, argMax, argMax)
+        ) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))
         maxdemon = max(demon, maxdemon)
     return maxdemon
-
 
 
 def nonlin_index_TEMoN3(stm, stt):
     """Function to calculate the nonlinearity index
 
-    Using tensor eigenvalues, the quotient of the induced 2-norm 
+    Using tensor eigenvalues, the quotient of the induced 2-norm
     of the 3rd order term in the CGT series with the 2-norm of the second order term in the CGT series
 
     Args:
@@ -436,7 +431,7 @@ def nonlin_index_TEMoN3(stm, stt):
     maxtemon = 0
     istm = np.linalg.inv(stm)
     CGT3 = np.einsum("lij,lk->ijk", stt, stm)
-    tens =  np.einsum("lmn,li,mj,nk->ijk", CGT3, istm, istm, istm)
+    tens = np.einsum("lmn,li,mj,nk->ijk", CGT3, istm, istm, istm)
     tens = symmetrize_tensor(tens)
     K = get_polynomial_bound(tens)
     print("K is")
@@ -444,20 +439,24 @@ def nonlin_index_TEMoN3(stm, stt):
     for i in range(100):
         guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
         guess = guess / np.linalg.norm(guess)
-        argMax, m_1norm = MM_iteration(-1. * tens, guess, 800, 1e-9)
+        argMax, m_1norm = MM_iteration(-1.0 * tens, guess, 800, 1e-9)
         argMax = np.matmul(istm, argMax)
         argMax = argMax / np.linalg.norm(argMax)
-        temon = np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax, argMax, argMax)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))**2
+        temon = (
+            np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax, argMax, argMax))
+            / np.linalg.norm(np.einsum("ij,j->i", stm, argMax)) ** 2
+        )
 
         argMax1, m_1norm = MM_iteration(tens, guess, 800, 1e-9)
         argMax1 = np.matmul(istm, argMax1)
         argMax1 = argMax1 / np.linalg.norm(argMax1)
-        temon1 = np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax1, argMax1, argMax1)) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax1))**2
+        temon1 = (
+            np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax1, argMax1, argMax1))
+            / np.linalg.norm(np.einsum("ij,j->i", stm, argMax1)) ** 2
+        )
         maxtemon = max(temon, maxtemon)
         maxtemon = max(temon1, maxtemon)
     return maxtemon
-
-
 
 
 def stt_2_norm(stm, stt):

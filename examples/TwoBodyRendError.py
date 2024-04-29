@@ -143,30 +143,13 @@ for i in range(0, 20):
     r = 10.0 * (i + 1)
     xvals.append(r)
 
-    # Sampling Method with different number of samples.
+    # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
             stm, transfer_time, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
-    """ Additional max errors for more samples
-    s_1yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 2000)
-        )
-    )
-    s_2yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 3000)
-        )
-    )
-    s_3yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, r_f, x_0, normalize_sphere_samples(r, 4000)
-        )
-    )
-    """
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(pow(r, 2) * np.sqrt(F1Norm))
 
@@ -247,8 +230,10 @@ for i in range(len(xvals)):
 fig3, error = plt.subplots(figsize=(8, 6))
 error.plot(xvals, error0_3, label="Sampling", linewidth=4)
 error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
-# below 10^-5 level
-# error.plot(xvals, error2_3, label="Eigenvec. Eval.")
+
+# Error 2_3 below 10^-5 level
+
+
 error.set_xlabel("Radius of Relative Initial Position (km)", fontsize=18)
 error.set_ylabel("Method Percentage Error", fontsize=18)
 error.set_yscale("log")
