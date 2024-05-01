@@ -106,7 +106,7 @@ ax.plot(ts, NLI6s, linewidth=4)
 ax.set_xlabel("Time (Periods)", fontsize=18)
 ax.set_xticks(xvals, xlabels, fontsize=16)
 ax.tick_params(axis="y", labelsize=16)
-ax.set_ylabel("DEMoN-2", fontsize=18)
+ax.set_ylabel("TEMoN-3", fontsize=18)
 
 
 plt.show()

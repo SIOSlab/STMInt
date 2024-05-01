@@ -434,8 +434,6 @@ def nonlin_index_TEMoN3(stm, stt):
     tens = np.einsum("lmn,li,mj,nk->ijk", CGT3, istm, istm, istm)
     tens = symmetrize_tensor(tens)
     K = get_polynomial_bound(tens)
-    print("K is")
-    print(K)
     for i in range(100):
         guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
         guess = guess / np.linalg.norm(guess)

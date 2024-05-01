@@ -492,9 +492,9 @@ class STMint:
 
             for i in range(len(solution.y)):
                 t_f.append(solution.y[i][-1])
-
-            state = np.array(t_f[:6])
-            stm = np.reshape(t_f[6:], (6, 6))
+            l = len(self.vars)
+            state = np.array(t_f[:l])
+            stm = np.reshape(t_f[l:], (l, l))
 
             return state, stm
 
