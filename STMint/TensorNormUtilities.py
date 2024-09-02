@@ -35,10 +35,35 @@ def nonlin_index_inf_2(stm, stt):
     return sttNorm / stmNorm
 
 
-def nonlin_index_unfold(stm, stt):
+def nonlin_index_junkins_scale_free(stm, stt):
     """Function to calculate the nonlinearity index
 
     The induced 2 norm of the unfolded STT is used in this calculation
+    This gives the quotient of the (Frobenius, 2)-norm of the second order STT
+    with the Frobenius norm of the STM.
+
+     Args:
+         stm (np array)
+             State transition matrix
+
+         stt (np array)
+             Second order state transition tensor
+
+     Returns:
+         nonlinearity_index (float)
+    """
+    dim = len(stm)
+    sttNorm = norm(np.reshape(stt, (dim**2, dim)), 2)
+    stmNorm = norm(stm, "fro")
+    return sttNorm / stmNorm
+
+
+def nonlin_index_unfold_bound(stm, stt):
+    """Function to calculate the nonlinearity index
+
+    The induced 2 norm of the unfolded STT is used in this calculation.
+    This is a bound on the 2-norm of the second order STT quotiented with
+    the 2-norm of the STM
 
      Args:
          stm (np array)
@@ -52,53 +77,6 @@ def nonlin_index_unfold(stm, stt):
     """
     dim = len(stm)
     sttNorm = norm(np.reshape(stt, (dim, dim**2)), 2)
-    stmNorm = norm(stm, 2)
-    return sttNorm / stmNorm
-
-
-def nonlin_index_frob(stm, stt):
-    """Function to calculate the nonlinearity index
-
-    The frobenius norm of the STT is used in this calculation
-
-     Args:
-         stm (np array)
-             State transition matrix
-
-         stt (np array)
-             Second order state transition tensor
-
-     Returns:
-         nonlinearity_index (float)
-    """
-    dim = len(stm)
-    sttNorm = norm(np.reshape(stt, (dim, dim**2)), "fro")
-    stmNorm = norm(stm, "fro")
-    return sttNorm / stmNorm
-
-
-def nonlin_index_2(stm, stt):
-    """Function to calculate the nonlinearity index
-
-    An approximation of the induced 2 norm of the STT is used in this calculation
-    One iteration of singular value decomposition of the contracted STT is taken
-    with the maximal right singular vector of the STM as an initial guess.
-
-    Args:
-        stm (np array)
-            State transition matrix
-
-        stt (np array)
-            Second order state transition tensor
-
-    Returns:
-        nonlinearity_index (float)
-    """
-    _, _, vh = svd(stm)
-    stmVVec = vh[0, :]
-    _, _, vh1 = svd(np.einsum("ijk,k->ij", stt, stmVVec))
-    stt_vec = vh1[0, :]
-    sttNorm = norm(np.einsum("ijk,j,k->i", stt, stt_vec, stt_vec), 2)
     stmNorm = norm(stm, 2)
     return sttNorm / stmNorm
 
@@ -199,35 +177,14 @@ def power_iteration(tens, vecGuess, maxIter, tol):
     """
     stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
-    vec = None
+    vec = vecGuess
     vecNorm = None
     for i in range(maxIter):
-        vecPrev = vecGuess
+        vecPrev = vec
         vec, vecNorm = power_iterate(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break
     return vec, vecNorm
-
-
-def symmetrize_tensor(tens):
-    """Symmetrize a tensor
-
-    Args:
-        tens (np array)
-            Tensor
-
-    Returns:
-        symTens (np array)
-    """
-    dim = tens.ndim
-    rangedim = range(dim)
-    tensDiv = tens / math.factorial(dim)
-    permutes = map(
-        lambda sigma: np.moveaxis(tensDiv, rangedim, sigma),
-        itertools.permutations(range(dim)),
-    )
-    symTens = functools.reduce(lambda x, y: x + y, permutes)
-    return symTens
 
 
 def power_iterate_symmetrizing(stringEin, tensOrder, tens, vec):
@@ -286,20 +243,123 @@ def power_iteration_symmetrizing(tens, vecGuess, maxIter, tol):
     """
     stringEin = power_iterate_string(tens)
     tensOrder = tens.ndim
-    vec = None
+    vec = vecGuess
     vecNorm = None
     for i in range(maxIter):
-        vecPrev = vecGuess
+        vecPrev = vec
         vec, vecNorm = power_iterate_symmetrizing(stringEin, tensOrder, tens, vecPrev)
         if np.linalg.norm(vec - vecPrev) < tol:
             break
     return vec, vecNorm
 
 
-def nonlin_index_2_eigenvector(stm, stt):
+def get_polynomial_bound(tens):
+    """Function to find a bound on the value of a sclar valued polynomial on the unit sphere
+
+    Args:
+        tens (np array)
+            Tensor
+
+    Returns:
+        K (double)
+            Bound on the polynomial on the unit sphere
+    """
+    tensOrder = tens.ndim
+    return np.sum(np.abs(tens)) * ((tensOrder - 1.0) * tensOrder)
+
+
+def MM_iterate(stringEin, tensOrder, tens, K, vec):
+    """Function to perform one step of polynomial optimization on a scalar valued polynomial on unit sphere
+
+    Single step
+
+    Args:
+        stringEin (string)
+            String to instruct einsum to perform contractions
+
+        tensOrder (int)
+            Order of the tensor
+
+        tens (np array)
+            Tensor
+
+        K (double)
+            Damping constant
+
+        vec (np array)
+            Vector
+
+    Returns:
+        vecNew (np array)
+
+        vecNorm (float)
+    """
+    poly = np.einsum(stringEin, tens, *([vec] * (tensOrder - 1)))
+    vecNew = vec - 1 / K * poly
+    vecNorm = np.linalg.norm(vecNew)
+    return vecNew / vecNorm, vecNorm
+
+
+def MM_iteration(tens, vecGuess, maxIter, tol):
+    """Function to perform polynomial optimization on a scalar valued polynomial on unit sphere
+
+    Args:
+        tens (np array)
+            Tensor
+
+        vec (np array)
+            Vector
+
+        maxIter (int)
+            Max number of iterations to perform
+
+        tol (float)
+            Tolerance for difference and iterates
+
+    Returns:
+        eigVec (np array)
+
+        eigValue (np array)
+    """
+    stringEin = power_iterate_string(tens)
+    tensOrder = tens.ndim
+    vec = vecGuess
+    vecNorm = None
+    K = get_polynomial_bound(tens)
+    for i in range(maxIter):
+        vecPrev = vec
+        vec, vecNorm = MM_iterate(stringEin, tensOrder, tens, K, vecPrev)
+        if np.linalg.norm(vec - vecPrev) < tol:
+            break
+    return vec, vecNorm
+
+
+def symmetrize_tensor(tens):
+    """Symmetrize a tensor
+
+    Args:
+        tens (np array)
+            Tensor
+
+    Returns:
+        symTens (np array)
+    """
+    dim = tens.ndim
+    rangedim = range(dim)
+    tensDiv = tens / math.factorial(dim)
+    permutes = map(
+        lambda sigma: np.moveaxis(tensDiv, rangedim, sigma),
+        itertools.permutations(range(dim)),
+    )
+    symTens = functools.reduce(lambda x, y: x + y, permutes)
+    return symTens
+
+
+def nonlin_index_2(stm, stt):
     """Function to calculate the nonlinearity index
 
-    The maximum eigenvalue of the tensor squared
+    Using tensor eigenvalues, the quotient of the induced 2-norm
+    of the STT with the 2-norm of the STM
 
     Args:
         stm (np array)
@@ -314,16 +374,16 @@ def nonlin_index_2_eigenvector(stm, stt):
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
     tensSquared = np.einsum(tensor_square_string(stt), stt, stt)
-    tensSquaredSym = symmetrize_tensor(tensSquared)
-    _, sttNorm = power_iteration(tensSquaredSym, stmVVec, 20, 1e-3)
+    _, sttNorm = power_iteration(tensSquared, stmVVec, 20, 1e-3)
     stmNorm = norm(stm, 2)
     return math.sqrt(sttNorm) / stmNorm
 
 
-def nonlin_index_2_eigenvector_symmetrizing(stm, stt):
+def nonlin_index_DEMoN2(stm, stt):
     """Function to calculate the nonlinearity index
 
-    The maximum eigenvalue of the tensor squared computed with symmetrization along the way
+    Using tensor eigenvalues, the quotient of the induced 2-norm
+    of the STT with the 2-norm of the STM
 
     Args:
         stm (np array)
@@ -335,13 +395,66 @@ def nonlin_index_2_eigenvector_symmetrizing(stm, stt):
     Returns:
         nonlinearity_index (float)
     """
-    _, _, vh = svd(stm)
-    stmVVec = vh[0, :]
-    tensSquared = np.einsum(tensor_square_string(stt), stt, stt)
-    # tensSquaredSym = symmetrize_tensor(tensSquared)
-    _, sttNorm = power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
-    stmNorm = norm(stm, 2)
-    return math.sqrt(sttNorm) / stmNorm
+    maxdemon = 0
+    istm = np.linalg.inv(stm)
+    tens = np.einsum("ilm,lj,mk->ijk", stt, istm, istm)
+    tensSquared = np.einsum("ijk,ilm->jklm", tens, tens)
+    for i in range(100):
+        guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
+        guess = guess / np.linalg.norm(guess)
+        argMax, m_1norm = power_iteration(tensSquared, guess, 300, 1e-9)
+        argMax = np.matmul(istm, argMax)
+        argMax = argMax / np.linalg.norm(argMax)
+        demon = np.linalg.norm(
+            np.einsum("ijk,j,k->i", stt, argMax, argMax)
+        ) / np.linalg.norm(np.einsum("ij,j->i", stm, argMax))
+        maxdemon = max(demon, maxdemon)
+    return maxdemon
+
+
+def nonlin_index_TEMoN3(stm, stt):
+    """Function to calculate the nonlinearity index
+
+    Using tensor eigenvalues, the quotient of the induced 2-norm
+    of the 3rd order term in the CGT series with the 2-norm of the second order term in the CGT series
+
+    Args:
+        stm (np array)
+            State transition matrix (used to generate guess)
+
+        stt (np array)
+            Arbitrary order state transition tensor
+
+    Returns:
+        nonlinearity_index (float)
+    """
+    maxtemon = 0
+    istm = np.linalg.inv(stm)
+    CGT3 = np.einsum("lij,lk->ijk", stt, stm)
+    tens = np.einsum("lmn,li,mj,nk->ijk", CGT3, istm, istm, istm)
+    tens = symmetrize_tensor(tens)
+    K = get_polynomial_bound(tens)
+    for i in range(100):
+        guess = np.random.multivariate_normal(np.zeros(len(stm)), np.identity(len(stm)))
+        guess = guess / np.linalg.norm(guess)
+        argMax, m_1norm = MM_iteration(-1.0 * tens, guess, 800, 1e-9)
+        argMax = np.matmul(istm, argMax)
+        argMax = argMax / np.linalg.norm(argMax)
+        temon = (
+            np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax, argMax, argMax))
+            / np.linalg.norm(np.einsum("ij,j->i", stm, argMax)) ** 2
+        )
+
+        argMax1, m_1norm = MM_iteration(tens, guess, 800, 1e-9)
+        argMax1 = np.matmul(istm, argMax1)
+        argMax1 = argMax1 / np.linalg.norm(argMax1)
+        temon1 = (
+            np.abs(np.einsum("ijk,i,j,k->", CGT3, argMax1, argMax1, argMax1))
+            / np.linalg.norm(np.einsum("ij,j->i", stm, argMax1)) ** 2
+        )
+        maxtemon = max(temon, maxtemon)
+        maxtemon = max(temon1, maxtemon)
+    return maxtemon
 
 
 def stt_2_norm(stm, stt):
@@ -365,8 +478,7 @@ def stt_2_norm(stm, stt):
     _, _, vh = svd(stm)
     stmVVec = vh[0, :]
     tensSquared = np.einsum("ijk,ilm->jklm", stt, stt)
-    # tensSquaredSym = self.symmetrize_tensor(tensSquared)
-    sttArgMax, sttNorm = power_iteration_symmetrizing(tensSquared, stmVVec, 20, 1e-3)
+    sttArgMax, sttNorm = power_iteration(tensSquared, stmVVec, 20, 1e-3)
     return sttArgMax, np.sqrt(sttNorm)
 
 

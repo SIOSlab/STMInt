@@ -57,7 +57,7 @@ class TestTwoBodyMotion(unittest.TestCase):
             [0, (2 * math.pi)], [1, 0, 0, 0, 1, 0], output="final", max_step=0.001
         )
         # run the nonlinearity index calculation
-        nonlinearity_index = tnu.nonlin_index_2_eigenvector(
+        nonlinearity_index = tnu.nonlin_index_inf_2(
             self.testDynamicsAndVariational2_10[1],
             self.testDynamicsAndVariational2_10[2],
         )

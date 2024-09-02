@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Tensor Norm Paper Figures" type="CompoundRunConfigurationType">
+    <toRun name="NrhoGuidanceError" type="PythonConfigurationType" />
+    <toRun name="NrhoPropError" type="PythonConfigurationType" />
+    <toRun name="NrhoRendError" type="PythonConfigurationType" />
+    <toRun name="NrhoVelError" type="PythonConfigurationType" />
+    <toRun name="TwoBodyGuidanceError" type="PythonConfigurationType" />
+    <toRun name="TwoBodyPropError" type="PythonConfigurationType" />
+    <toRun name="TwoBodyRendError" type="PythonConfigurationType" />
+    <toRun name="TwoBodyVelError" type="PythonConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

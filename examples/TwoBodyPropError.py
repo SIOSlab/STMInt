@@ -7,10 +7,7 @@ from poliastro.twobody.orbit import Orbit
 import poliastro.bodies as body
 import matplotlib.pyplot as plt
 from scipy.optimize import least_squares
-
-# ======================================================================================================================
-# Method 0: Sampling method for calculating maximum error
-# ======================================================================================================================
+from scipy.stats import linregress
 
 # ISS Keplerian Elements
 a = 6738 << u.km
@@ -23,6 +20,10 @@ argp = 0 << u.deg
 nu = 0 << u.deg
 
 iss_orbit = Orbit.from_classical(body.Earth, a, ecc, inc, raan, argp, nu)
+
+period = iss_orbit.period.to(u.s).value
+transfer_time = period / 10.0
+
 # ISS ICS
 x_0 = np.array([*iss_orbit.r.value, *iss_orbit.v.value])
 
@@ -43,9 +44,6 @@ def calc_error(stm, transfer_time, x_0, perturbation):
     r_f_pert = np.array([iss_perturbed_orbit.propagate(transfer_time * u.s).r.value])
 
     return np.linalg.norm(((r_f_pert - r_f_ref) - np.matmul(stm, delta_x_0)[:3]), ord=2)
-
-
-# Step 3
 
 
 def normalize_sphere_samples(r, n):
@@ -76,50 +74,48 @@ m_1yvals = []
 m_2yvals = []
 m_3yvals = []
 xvals = []
-transfer_time = iss_orbit.period.to(u.s).value / 10.0
 
 integrator = STMint(preset="twoBodyEarth", variational_order=2)
-stm = integrator.dynVar_int([0, transfer_time], x_0, output="final")[1]
-stt = integrator.dynVar_int2([0, transfer_time], x_0, output="final")[2]
+_, stm, stt = integrator.dynVar_int2(
+    [0, transfer_time], x_0, max_step=(transfer_time) / 100.0, output="final"
+)
+
+_, stms, stts, ts = integrator.dynVar_int2(
+    [0, period], x_0, max_step=(transfer_time) / 100.0, output="all"
+)
+
+tensor_norms = []
+
+for i in range(1, len(ts)):
+    tensor_norms.append(tnu.stt_2_norm(stms[i][:3, 3:], stts[i][:3, 3:, 3:])[1])
+
 
 for i in range(0, 20):
-    # Change so r is linearly distributed
-    r = np.linalg.norm(x_0[3:]) / (100000) * ((i + 1) * 50)
+    # Convert to internal units of km (range of ~100m/s)
+    r = (10 * (i + 1)) / 1000
+
     xvals.append(r)
+
     sttArgMax, m_1norm = tnu.stt_2_norm(stm[:3, 3:], stt[:3, 3:, 3:])
 
-    # Sampling Method with different number of samples.
+    # Method 0: Sampling
     s_0yvals.append(
         calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 1000)
-        )
-    )
-    s_1yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 2000)
-        )
-    )
-    s_2yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 3000)
-        )
-    )
-    s_3yvals.append(
-        calc_sphere_max_error(
-            stm, transfer_time, x_0, normalize_sphere_samples(r, 4000)
+            stm, transfer_time, x_0, normalize_sphere_samples(r, 5000)
         )
     )
 
     # Method 1: Analytical method for calculating maximum error
     m_1yvals.append(0.5 * pow(r, 2) * m_1norm)
 
+    # Method 2: Making an educated guess at the maximum error.
     m_2yvals.append(calc_error(stm, transfer_time, x_0, r * sttArgMax))
 
     # Method 3: Least Squares Error Maximization
     initial_guess = np.array([*(sttArgMax * r)])
 
     err = lambda pert: calc_error(stm, transfer_time, x_0, pert)
-    objective = lambda dv0: err(r * sttArgMax) - err(dv0)
+    objective = lambda dv0: -1.0 * err(dv0)
     eq_cons = {
         "type": "eq",
         "fun": lambda dv0: r**2 - np.linalg.norm(dv0, ord=2) ** 2,
@@ -130,30 +126,40 @@ for i in range(0, 20):
         initial_guess,
         method="SLSQP",
         constraints=eq_cons,
-        options={"ftol": 1e-9, "disp": True},
+        tol=1e-12,
+        options={"disp": True},
     )
 
     m_3yvals.append(err(min.x))
 
-#   Change xvals' units to meters
-xvals_m = [x * 1000 for x in xvals]
-m_3yvals_m = [x * 1000 for x in m_3yvals]
+# Change units from km to meters
+xvals = [x * 1000 for x in xvals]
+s_0yvals = [x * 1000 for x in s_0yvals]
+m_1yvals = [x * 1000 for x in m_1yvals]
+m_2yvals = [x * 1000 for x in m_2yvals]
+m_3yvals = [x * 1000 for x in m_3yvals]
+tensor_norms = [x / 1000.0 for x in tensor_norms]
+
+# Changing ts to periods
+ts = [(x / period) for x in ts]
 
 # Plotting each method in single graph
+plt.style.use("seaborn-v0_8-colorblind")
+
 fig, axs = plt.subplots(4, sharex=True)
-axs[1].plot(xvals_m, s_0yvals)
+axs[1].plot(xvals, s_0yvals)
 axs[1].set_title("Method 0")
-axs[0].plot(xvals_m, m_1yvals)
+axs[0].plot(xvals, m_1yvals)
 axs[0].set_title("Method 1")
-axs[2].plot(xvals_m, m_2yvals)
+axs[2].plot(xvals, m_2yvals)
 axs[2].set_title("Method 2")
-axs[3].plot(xvals_m, m_3yvals)
+axs[3].plot(xvals, m_3yvals)
 axs[3].set_title("Method 3")
 axs[3].set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
 fig.text(
     0.06,
     0.5,
-    "Maximum Error",
+    "Maximum Error (m)",
     ha="center",
     va="center",
     rotation="vertical",
@@ -162,44 +168,43 @@ fig.text(
 plt.subplots_adjust(hspace=1, left=0.2, right=0.9)
 
 # Plotting only method 3
-fig2, model3 = plt.subplots(figsize=(8, 4.8))
-model3.plot(xvals_m, m_3yvals_m)
-model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-model3.set_ylabel("Maximum Error (m)", fontsize=16)
+fig2, model3 = plt.subplots(figsize=(8, 6))
+model3.plot(xvals, m_1yvals, linewidth=4)
+model3.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
+model3.set_ylabel("Maximum Error (m)", fontsize=18)
+model3.tick_params(labelsize=14)
 
-# Plotting error between methods (1 and 2 with resepct to 3)
+# Plotting error between methods (0, 1, and 2 with respect to 3)
+error0_3 = []
 error1_3 = []
 error2_3 = []
-for i in range(len(xvals_m)):
+
+for i in range(len(xvals)):
+    error0_3.append((abs((s_0yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error1_3.append((abs((m_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
     error2_3.append((abs((m_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
 
-fig3, error = plt.subplots(figsize=(7, 4.8))
-error.plot(xvals_m, error1_3, label="Methods 1 and 3")
-error.plot(xvals_m, error2_3, label="Methods 2 and 3")
-error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-error.set_ylabel("Method Percentage Error", fontsize=16)
-error.legend()
+fig3, error = plt.subplots(figsize=(8, 6))
+error.plot(xvals, error0_3, label="Sampling", linewidth=4)
+error.plot(xvals, error1_3, label="Tensor Norm", linewidth=4)
+error.plot(xvals, error2_3, label="Eigenvec. Eval.", linewidth=4)
+error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=18)
+error.set_ylabel("Method Percentage Error", fontsize=18)
+error.set_yscale("log")
+error.legend(fontsize=14)
+error.tick_params(labelsize=14)
 
-# Plotting error between sampling method and method 3
-s_error0_3 = []
-s_error1_3 = []
-s_error2_3 = []
-s_error3_3 = []
-for i in range(len(s_0yvals)):
-    s_error0_3.append((abs((s_0yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
-    s_error1_3.append((abs((s_1yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
-    s_error2_3.append((abs((s_2yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
-    s_error3_3.append((abs((s_3yvals[i] - m_3yvals[i])) / m_3yvals[i]) * 100)
+xvals = np.array([0, 0.25, 0.5, 0.75, 1])
+xlabels = ["0", "1/4", "1/2", "3/4", "1"]
 
+fig4, norms = plt.subplots(figsize=(8, 6))
+norms.plot(ts[21:], tensor_norms[20:], linewidth=4)
+norms.set_xlabel("Time of Flight (periods)", fontsize=18)
+norms.set_ylabel("Tensor Norm (s^2 / m)", fontsize=18)
+norms.tick_params(labelsize=14)
+norms.set_xticks(xvals, xlabels, fontsize=14)
+norms.set_xticks(xvals, xlabels, fontsize=14)
 
-fig4, s_error = plt.subplots(figsize=(7, 4.8))
-s_error.plot(xvals_m, s_error0_3, label="1000 Samples")
-s_error.plot(xvals_m, s_error1_3, label="2000 Samples")
-s_error.plot(xvals_m, s_error2_3, label="3000 Samples")
-s_error.plot(xvals_m, s_error3_3, label="4000 Samples")
-s_error.set_xlabel("Radius of Sphere of Perturbation (m/s)", fontsize=16)
-s_error.set_ylabel("Method Percentage Error", fontsize=16)
-s_error.legend()
-
-plt.show()
+fig2.savefig("figures/Prop/twoBodyPropOpt.png")
+fig3.savefig("figures/Prop/twoBodyPropError.png")
+fig4.savefig("figures/Prop/twoBodyPropTNorms.png")
