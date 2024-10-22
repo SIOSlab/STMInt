@@ -1,4 +1,4 @@
 numpy
 scipy
 astropy
-sympy
+sympy<1.13
