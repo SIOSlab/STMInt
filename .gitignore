@@ -167,3 +167,6 @@ build/
 
 # Distribution / Egg files
 dist/
+
+.*.swp
+.DS_Store
