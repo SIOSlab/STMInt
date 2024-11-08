@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "STMint"
-copyright = "2023, Jackson Kulik, Cedric Orton-Urbina"
+copyright = "2024, Jackson Kulik, Cedric Orton-Urbina"
 author = "Jackson Kulik, Cedric Orton-Urbina"
 release = "1.2"
 
